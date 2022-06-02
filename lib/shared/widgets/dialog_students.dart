@@ -1,4 +1,3 @@
-
 // ignore_for_file: unrelated_type_equality_checks
 
 import 'package:flutter/material.dart';
@@ -17,32 +16,30 @@ class DialogStudents extends StatelessWidget {
   final List<Estudiante> valueCheck;
   final List<String> itemsTitle;
   final VoidCallback onTapAcept;
+  final RxBool seleccionarTodo;
 
-  const DialogStudents(
-      {required this.titulo,
-      this.titleSize = 25.0,
-      required this.mensaje,
-      required this.tipo,
-      required this.studentsList,
-      required this.controller,
-      required this.valueCheck,
-      required this.itemsTitle,
-      required this.onTapAcept
-      });
+  const DialogStudents({
+    required this.titulo,
+    this.titleSize = 25.0,
+    required this.mensaje,
+    required this.tipo,
+    required this.studentsList,
+    required this.controller,
+    required this.valueCheck,
+    required this.itemsTitle,
+    required this.onTapAcept,
+    required this.seleccionarTodo,
+  });
 
   @override
   Widget build(BuildContext context) {
     final Size _size = MediaQuery.of(context).size;
     final TextStyle _tituloEstilo = TextStyle(
         fontWeight: FontWeight.bold,
-        color: this.tipo == Constants.EXITO
-            ? Colors.green
-            : Colors.red,
+        color: this.tipo == Constants.EXITO ? Colors.green : Colors.red,
         fontSize: this.titleSize);
     final TextStyle _textoEstilo = TextStyle(
-        fontWeight: FontWeight.w300,
-        color: Colors.black,
-        fontSize: 15.0);
+        fontWeight: FontWeight.w300, color: Colors.black, fontSize: 15.0);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -58,19 +55,25 @@ class DialogStudents extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(height: 10,),
+                SizedBox(
+                  height: 10,
+                ),
                 SizedBox(
                   width: double.infinity,
                   height: _size.height * 0.10,
                   child: tipo == Constants.EXITO
-                      ? const Image(image: AssetImage("assets/images/sucess.png"),
+                      ? const Image(
+                          image: AssetImage("assets/images/sucess.png"),
                           alignment: Alignment.center,
                           fit: BoxFit.contain)
-                      : const Image(image: AssetImage("assets/images/error.png"),
+                      : const Image(
+                          image: AssetImage("assets/images/error.png"),
                           alignment: Alignment.center,
                           fit: BoxFit.contain),
                 ),
-                SizedBox(height: 5,),
+                SizedBox(
+                  height: 5,
+                ),
                 Text(
                   this.titulo,
                   textAlign: TextAlign.center,
@@ -79,23 +82,41 @@ class DialogStudents extends StatelessWidget {
                 SizedBox(height: _size.height * 0.02),
                 Container(
                   decoration: BoxDecoration(
-                    border: Border.all(width: 0.3, color: Colors.grey)
-                  ),
+                      border: Border.all(width: 0.3, color: Colors.grey)),
                 ),
                 SizedBox(height: 10),
-                Text('Hijos por retirar', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),),
+                Text(
+                  'Hijos por retirar',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                ),
+                SizedBox(height: 10),
+                Obx(() {
+                  return CheckboxListTile(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(60)),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    selected: false,
+                    title: Text('Seleccionar todo'),
+                    value: seleccionarTodo.value,
+                    onChanged: (value) => {
+                      seleccionarTodo.value = value!,
+                      if (value)
+                        {controller.selectAll()}
+                      else
+                        {controller.deselectAll()}
+                    },
+                  );
+                }),
                 SimpleGroupedCheckbox(
                   values: this.valueCheck,
-                  groupStyle: GroupStyle(
-                    itemTitleStyle: TextStyle(fontSize: 15)
-                  ),
+                  groupStyle:
+                      GroupStyle(itemTitleStyle: TextStyle(fontSize: 15)),
                   controller: this.controller,
                   itemsTitle: this.itemsTitle,
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    border: Border.all(width: 0.3, color: Colors.grey)
-                  ),
+                      border: Border.all(width: 0.3, color: Colors.grey)),
                 ),
                 SizedBox(height: 20),
                 InkWell(
@@ -104,21 +125,37 @@ class DialogStudents extends StatelessWidget {
                     height: 50,
                     width: 150,
                     decoration: BoxDecoration(
-                      color: tipo == Constants.EXITO ? Colors.green : Color(0xFFED1B30),
+                      color: tipo == Constants.EXITO
+                          ? Colors.green
+                          : Color(0xFFED1B30),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Center(child: Text('Aceptar', style: TextStyle(color: Colors.white),),),
+                    child: Center(
+                      child: Text(
+                        'Aceptar',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ),
                 ),
-                SizedBox(height: 15,),
+                SizedBox(
+                  height: 15,
+                ),
                 InkWell(
                   onTap: () {
                     Get.back();
                   },
-                  child: Center(child: Text('Cancelar', style: TextStyle(fontSize: 15),),),
+                  child: Center(
+                    child: Text(
+                      'Cancelar',
+                      style: TextStyle(fontSize: 15),
+                    ),
+                  ),
                 ),
-                SizedBox(height: 10,),
-                ],
+                SizedBox(
+                  height: 10,
+                ),
+              ],
             ),
           ),
         ),

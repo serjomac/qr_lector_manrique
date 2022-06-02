@@ -17,7 +17,6 @@ import 'package:qr_scaner_manrique/utils/constants/constants.dart';
 import 'package:checkbox_grouped/checkbox_grouped.dart';
 
 class QrScannerController extends GetxController {
-
   ApiManager apiManager = ApiManager();
   LocalApi localApi = LocalApi();
 
@@ -26,7 +25,8 @@ class QrScannerController extends GetxController {
   GroupController controller = GroupController(isMultipleSelection: true);
 
   RxBool loadingValidateQrCode = false.obs;
-  List<Estudiante> _studentsList = []; 
+  RxBool seleccionarTodo = false.obs;
+  List<Estudiante> _studentsList = [];
   List<Estudiante> _studentsSelected = [];
 
   @override
@@ -49,15 +49,13 @@ class QrScannerController extends GetxController {
     }
   }
 
-
   Future<void> validateQrCode(String qrCode, String idArea) async {
     loadingValidateQrCode.value = true;
-    ValidateQrCodeRequest validateQrCodeRequest = ValidateQrCodeRequest(
-      codigo: qrCode,
-      idArea: idArea
-    );
+    ValidateQrCodeRequest validateQrCodeRequest =
+        ValidateQrCodeRequest(codigo: qrCode, idArea: idArea);
     try {
-      final responseValidacionQR = await apiManager.validateQrCode(validateQrCodeRequest);
+      final responseValidacionQR =
+          await apiManager.validateQrCode(validateQrCodeRequest);
       loadingValidateQrCode.value = false;
       _studentsList = responseValidacionQR.mensaje!.estudiante!;
       update(['']);
@@ -65,7 +63,14 @@ class QrScannerController extends GetxController {
       for (var e in responseValidacionQR.mensaje!.estudiante!) {
         itemsTitle.add(e.nombre!);
       }
-      _showModalStudentsList('Alumnos por recoger', Constants.EXITO, responseValidacionQR.mensaje!.mensaje!, _studentsList, itemsTitle, responseValidacionQR.mensaje!.estudiante!, controller, () async {
+      _showModalStudentsList(
+          'Alumnos por recoger',
+          Constants.EXITO,
+          responseValidacionQR.mensaje!.mensaje!,
+          _studentsList,
+          itemsTitle,
+          responseValidacionQR.mensaje!.estudiante!,
+          controller, () async {
         _studentsSelected = controller.selectedItem as List<Estudiante>;
         var idHijos = '';
         for (var estudiante in _studentsSelected) {
@@ -73,16 +78,17 @@ class QrScannerController extends GetxController {
         }
         idHijos = idHijos.substring(0, idHijos.length - 1);
         final req = RetirarRequest(
-          celular: responseValidacionQR.mensaje!.celular,
-          nombre: responseValidacionQR.mensaje!.residente,
-          tipo: responseValidacionQR.mensaje!.tipo,
-          idHijos: idHijos
-        );
+            celular: responseValidacionQR.mensaje!.celular,
+            nombre: responseValidacionQR.mensaje!.residente,
+            tipo: responseValidacionQR.mensaje!.tipo,
+            idHijos: idHijos);
         try {
           final res = await apiManager.RetirarEstudiante(req);
           if (res) {
             Get.back();
-            Get.snackbar('Validación exitosa', 'Dejar pasar al residente', snackPosition: SnackPosition.BOTTOM, duration: Duration(seconds: 2));
+            Get.snackbar('Validación exitosa', 'Dejar pasar al residente',
+                snackPosition: SnackPosition.BOTTOM,
+                duration: Duration(seconds: 2));
           } else {
             Get.snackbar('Error', 'Volver a intetar');
           }
@@ -94,10 +100,10 @@ class QrScannerController extends GetxController {
     } catch (e) {
       loadingValidateQrCode.value = false;
       final error = e as ResponseErrorModel;
-      return _showModalErrorLogin('No dejar pasar', Constants.ERROR, error.mensaje);
+      return _showModalErrorLogin(
+          'No dejar pasar', Constants.ERROR, error.mensaje);
     }
   }
-
 
   _showModalErrorLogin(String mensaje, String tipoRespuesta, String message) {
     showDialog(
@@ -105,12 +111,19 @@ class QrScannerController extends GetxController {
         context: Get.overlayContext!,
         builder: (c) {
           return DialogSuccessError(
-            titulo: message,
-            mensaje: mensaje,
-            tipo: tipoRespuesta);
+              titulo: message, mensaje: mensaje, tipo: tipoRespuesta);
         });
   }
-  _showModalStudentsList(String mensaje, String tipoRespuesta, String message, List<Estudiante> studentsList, List<String> itemsTitle, List<Estudiante> valueCheck, GroupController controller, VoidCallback onTapAceptar) {
+
+  _showModalStudentsList(
+      String mensaje,
+      String tipoRespuesta,
+      String message,
+      List<Estudiante> studentsList,
+      List<String> itemsTitle,
+      List<Estudiante> valueCheck,
+      GroupController controller,
+      VoidCallback onTapAceptar) {
     showDialog(
         barrierDismissible: false,
         context: Get.overlayContext!,
@@ -126,10 +139,9 @@ class QrScannerController extends GetxController {
               itemsTitle: itemsTitle,
               valueCheck: valueCheck,
               onTapAcept: onTapAceptar,
-              ),
+              seleccionarTodo: seleccionarTodo,
+            ),
           );
         });
   }
-  
-  
 }

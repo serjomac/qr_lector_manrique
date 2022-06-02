@@ -17,6 +17,7 @@ import 'package:checkbox_grouped/checkbox_grouped.dart';
 
 class SalidaController extends GetxController {
   RxBool _loagindSalida = false.obs;
+  RxBool seleccionarTodo = false.obs;
   ApiManager apiManager = ApiManager();
   LocalApi localApi = LocalApi();
   Map<String, dynamic> arguments = {};
@@ -35,6 +36,10 @@ class SalidaController extends GetxController {
     super.onInit();
   }
 
+  Area? get areaSelected {
+    return _areaSelected;
+  }
+
   // GETTERS NAD SETTERS
   RxBool get loagindSalida {
     return _loagindSalida;
@@ -46,6 +51,7 @@ class SalidaController extends GetxController {
 
   Future<void> getSalida({required String idArea, required String tipo}) async {
     try {
+      parentList = [];
       final salidaRequest = SalidaRequest(idArea: idArea, tipo: tipo);
       _loagindSalida.value = true;
       final res = await apiManager.getPadresSalida(salidaRequest);
@@ -93,12 +99,14 @@ class SalidaController extends GetxController {
               itemsTitle: itemsTitle,
               valueCheck: valueCheck,
               onTapAcept: onTapAceptar,
+              seleccionarTodo: seleccionarTodo,
+              onChange: (v) {},
             ),
           );
         });
-      if (result != null && result) {
-        getSalida(idArea: _areaSelected!.id!, tipo: 'P');
-      }
+    if (result != null && result) {
+      getSalida(idArea: _areaSelected!.id!, tipo: 'P');
+    }
   }
 
   List<String> getNombreHijos(ResponseSalida padre) {
@@ -118,32 +126,31 @@ class SalidaController extends GetxController {
     retiro = retiro.substring(0, retiro.length - 1);
     try {
       final marcarSalidaRequest = MarcarSalidaRequest(
-        celular: parent.celular,
-        nombre: parent.padre,
-        tipo: parent.hijos![0].tipo,
-        idRetiro: retiro
-      );
+          celular: parent.celular,
+          nombre: parent.padre,
+          tipo: parent.hijos![0].tipo,
+          idRetiro: retiro);
       _loagindSalida.value = true;
       final res = await apiManager.marcarSalida(marcarSalidaRequest);
       final resCloseDialog = await showDialog<bool>(
-        barrierDismissible: false,
-        context: Get.overlayContext!,
-        builder: (c) {
-          return WillPopScope(
-            onWillPop: () => Future.value(false),
-            child: DialogSuccessError(
-              mensaje: res,
-              tipo: Constants.EXITO,
-              titulo: 'Registro exitoso',
-              onTapAceptar: () {
-                Get.back(result: true);
-              },
-            ),
-          );
-        });
-        if (resCloseDialog != null && resCloseDialog) {
-          Get.back(result: true);
-        }
+          barrierDismissible: false,
+          context: Get.overlayContext!,
+          builder: (c) {
+            return WillPopScope(
+              onWillPop: () => Future.value(false),
+              child: DialogSuccessError(
+                mensaje: res,
+                tipo: Constants.EXITO,
+                titulo: 'Registro exitoso',
+                onTapAceptar: () {
+                  Get.back(result: true);
+                },
+              ),
+            );
+          });
+      if (resCloseDialog != null && resCloseDialog) {
+        Get.back(result: true);
+      }
       _loagindSalida.value = false;
     } catch (e) {
       _loagindSalida.value = false;
