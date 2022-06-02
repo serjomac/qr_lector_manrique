@@ -2,21 +2,32 @@
 // ignore_for_file: unrelated_type_equality_checks
 
 import 'package:flutter/material.dart';
+import 'package:qr_scaner_manrique/core/models/response_models/validation_qr_response.dart';
 import 'package:qr_scaner_manrique/utils/constants/constants.dart';
+import 'package:checkbox_grouped/checkbox_grouped.dart';
+import 'package:get/get.dart';
 
-class DialogSuccessError extends StatelessWidget {
+class DialogStudents extends StatelessWidget {
   final String titulo;
   final double titleSize;
   final String mensaje;
   final String tipo;
-  final VoidCallback? onTapAceptar;
+  final List<Estudiante> studentsList;
+  final GroupController controller;
+  final List<Estudiante> valueCheck;
+  final List<String> itemsTitle;
+  final VoidCallback onTapAcept;
 
-  const DialogSuccessError(
+  const DialogStudents(
       {required this.titulo,
       this.titleSize = 25.0,
       required this.mensaje,
       required this.tipo,
-      this.onTapAceptar
+      required this.studentsList,
+      required this.controller,
+      required this.valueCheck,
+      required this.itemsTitle,
+      required this.onTapAcept
       });
 
   @override
@@ -24,7 +35,9 @@ class DialogSuccessError extends StatelessWidget {
     final Size _size = MediaQuery.of(context).size;
     final TextStyle _tituloEstilo = TextStyle(
         fontWeight: FontWeight.bold,
-        color: this.tipo == Constants.EXITO ? Colors.green : tipo == Constants.INFORMATIVO ? Colors.blueGrey : Color(0xFFED1B30),
+        color: this.tipo == Constants.EXITO
+            ? Colors.green
+            : Colors.red,
         fontSize: this.titleSize);
     final TextStyle _textoEstilo = TextStyle(
         fontWeight: FontWeight.w300,
@@ -48,14 +61,12 @@ class DialogSuccessError extends StatelessWidget {
                 SizedBox(height: 10,),
                 SizedBox(
                   width: double.infinity,
-                  height: _size.height * 0.23,
+                  height: _size.height * 0.10,
                   child: tipo == Constants.EXITO
                       ? const Image(image: AssetImage("assets/images/sucess.png"),
                           alignment: Alignment.center,
                           fit: BoxFit.contain)
-                      : tipo == Constants.INFORMATIVO ? const Image(image: AssetImage("assets/images/info.png"),
-                          alignment: Alignment.center,
-                          fit: BoxFit.contain) : const Image(image: AssetImage("assets/images/error.png"),
+                      : const Image(image: AssetImage("assets/images/error.png"),
                           alignment: Alignment.center,
                           fit: BoxFit.contain),
                 ),
@@ -66,26 +77,45 @@ class DialogSuccessError extends StatelessWidget {
                   style: _tituloEstilo,
                 ),
                 SizedBox(height: _size.height * 0.02),
-                Text(
-                  this.mensaje,
-                  textAlign: TextAlign.center,
-                  style: _textoEstilo,
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(width: 0.3, color: Colors.grey)
+                  ),
                 ),
-                SizedBox(height: 5),Container(),
-                SizedBox(height: 15),
+                SizedBox(height: 10),
+                Text('Hijos por retirar', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),),
+                SimpleGroupedCheckbox(
+                  values: this.valueCheck,
+                  groupStyle: GroupStyle(
+                    itemTitleStyle: TextStyle(fontSize: 15)
+                  ),
+                  controller: this.controller,
+                  itemsTitle: this.itemsTitle,
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(width: 0.3, color: Colors.grey)
+                  ),
+                ),
+                SizedBox(height: 20),
                 InkWell(
-                  onTap: onTapAceptar ?? () {
-                     Navigator.pop(context);
-                  },
+                  onTap: onTapAcept,
                   child: Container(
                     height: 50,
                     width: 150,
                     decoration: BoxDecoration(
-                      color: tipo == Constants.EXITO ? Colors.green : tipo == Constants.INFORMATIVO ? Colors.blueGrey : Color(0xFFED1B30),
+                      color: tipo == Constants.EXITO ? Colors.green : Color(0xFFED1B30),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(child: Text('Aceptar', style: TextStyle(color: Colors.white),),),
                   ),
+                ),
+                SizedBox(height: 15,),
+                InkWell(
+                  onTap: () {
+                    Get.back();
+                  },
+                  child: Center(child: Text('Cancelar', style: TextStyle(fontSize: 15),),),
                 ),
                 SizedBox(height: 10,),
                 ],

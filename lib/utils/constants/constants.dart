@@ -6,5 +6,6 @@ abstract class Constants {
   // CODIGOS DE ERROR
   static const EXITO = 'S';
   static const ERROR = 'E';
+  static const INFORMATIVO = 'I';
 
 }

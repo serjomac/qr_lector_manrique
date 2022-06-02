@@ -5,4 +5,5 @@ abstract class AppRoutes {
   static const HOME         = '/LOGIN'; 
   static const QR_SCANNER   = '/qr_scanner';
   static const Schools      = '/schools';
+  static const SALIDA       = '/salida';
 }

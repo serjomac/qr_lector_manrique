@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:qr_scaner_manrique/core/api/api_managr.dart';
 import 'package:qr_scaner_manrique/core/api/local_api.dart';
+import 'package:qr_scaner_manrique/core/models/request_models/request_areas.dart';
 import 'package:qr_scaner_manrique/core/models/request_models/request_login.dart';
+import 'package:qr_scaner_manrique/core/models/response_models/area_model.dart';
 import 'package:qr_scaner_manrique/core/models/response_models/error_response_model.dart';
 import 'package:qr_scaner_manrique/core/routes/app_routes.dart';
 import 'package:qr_scaner_manrique/shared/widgets/dialog_sucess_error.dart';
@@ -19,6 +21,7 @@ class LoginController extends GetxController {
 
   ApiManager apiManager = ApiManager();
   LocalApi localApi = LocalApi();
+  List<Area> _areaList = [];
 
   // CAMPOS LOGIN
   String _email = '';
@@ -53,8 +56,13 @@ class LoginController extends GetxController {
   @override
   void onInit() async {
     final userData = await localApi.getUserData();
+    final araSelected = await localApi.getAreaselected();
     if (userData != null) {
-      Get.offAllNamed(AppRoutes.QR_SCANNER);
+      if (araSelected != null) {
+        Get.offAllNamed(AppRoutes.QR_SCANNER);
+      } else {
+        getAreasByUser(userData.id!);
+      }
     }
     super.onInit();
   }
@@ -65,9 +73,8 @@ class LoginController extends GetxController {
     try {
       RequestLogin requestLogin = RequestLogin(usuario: email, clave: password);
       final responseLogin = await apiManager.login(requestLogin);
-      presentSpinner.value = false;
       localApi.saveUserData(responseLogin);
-      Get.toNamed(AppRoutes.Schools);
+      getAreasByUser(responseLogin.id!);
     } catch (e) {
       _dioError = e as ResponseErrorModel;
       presentSpinner.value = false;
@@ -80,6 +87,20 @@ class LoginController extends GetxController {
     // } else {
     //   CustomDialogPage.showDialog('Error', responseLogin['status'], Colors.red);
     // }
+  }
+  Future<void> getAreasByUser(String idUser) async {
+    try {
+      AreaRequest areaRequest = AreaRequest(idUsuario: idUser);
+      _areaList = await apiManager.getAreasByUser(areaRequest);
+      presentSpinner.value = false;
+      Get.offAllNamed(AppRoutes.Schools, arguments: {
+        'idUser': idUser
+      });
+    } catch (e) {
+      _dioError = e as ResponseErrorModel;  
+      presentSpinner.value = false;  
+      _showModalErrorLogin(_dioError!.mensaje);
+    }
   }
 
   _showModalErrorLogin(String mensaje) {

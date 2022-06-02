@@ -76,11 +76,11 @@ class LoginPage extends StatelessWidget {
                                 return CustomInput(
                                   autocorect: false,
                                   hintText: '*********',
-                                  icono: _.isVisiblePass ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                  icono: !_.isVisiblePass ? Icons.visibility_off_rounded : Icons.visibility_rounded,
                                   onTapIcon: () {
                                     _.isVisiblePass = !_.isVisiblePass;
                                   },
-                                  isOscured: _.isVisiblePass,
+                                  isOscured: !_.isVisiblePass,
                                   keyBoardType: TextInputType.text,
                                   onChange: (String value) {
                                     _.password = value;

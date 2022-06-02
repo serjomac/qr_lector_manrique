@@ -8,20 +8,63 @@ class SchoolsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GetBuilder<SchoolsController>(
-        builder: (_) {
-            return ListView.builder(
-              itemCount: 5,
-              itemBuilder: (c, i) {
-              return ListTile(
-                title: Text('Hola'),
-                onTap: () {
-                  Get.offAllNamed(AppRoutes.QR_SCANNER);
-                },
-              );
-            });
-        },),
+    return SafeArea(
+      child: Scaffold(
+        body: GetBuilder<SchoolsController>(
+          builder: (_) {
+            return Column(
+              children: [
+                const SizedBox(
+                  height: 10,
+                ),
+                const Text(
+                  'Seleccione un aula',
+                  style: TextStyle(
+                    fontSize: 18,
+                  ),
+                ),
+                Obx(() {
+                  if (!_.loadingAreaList.value) {
+                    return Expanded(
+                      child: ListView.builder(
+                          itemCount: _.areaList.length,
+                          itemBuilder: (c, i) {
+                            return Column(
+                              children: [
+                                ListTile(
+                                    title: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(_.areaList[i].area ?? ''),
+                                        const Icon(Icons.school)
+                                      ],
+                                    ),
+                                    onTap: () {
+                                      _.selectedArea = _.areaList[i];
+                                      Get.offAllNamed(AppRoutes.QR_SCANNER);
+                                    }),
+                                Container(
+                                  margin: const EdgeInsets.only(left: 15),
+                                  decoration: BoxDecoration(
+                                      border: Border.all(
+                                          style: BorderStyle.solid,
+                                          color: Colors.grey,
+                                          width: 0.2)),
+                                )
+                              ],
+                            );
+                          }),
+                    );
+                  } else {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                })
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
