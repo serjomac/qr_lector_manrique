@@ -82,5 +82,7 @@ class _ScanCameraState extends State<ScanCamera> {
         Get.back(result: scanData.code);
       }
     });
+    controller.pauseCamera();
+    controller.resumeCamera();
   }
 }

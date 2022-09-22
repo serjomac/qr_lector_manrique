@@ -38,7 +38,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  qr_code_scanner: ^0.7.0
+  qr_code_scanner: ^1.0.0
   get: ^4.6.1
   dio: ^4.0.4
   email_validator: '^1.0.6'

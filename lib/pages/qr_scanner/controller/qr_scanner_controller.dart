@@ -41,7 +41,7 @@ class QrScannerController extends GetxController {
     final result = await Get.to(
       const ScanCamera(),
       fullscreenDialog: true,
-      duration: const Duration(seconds: 1),
+      duration: const Duration(milliseconds: 400),
     );
     log('RESPUESTA QR' + result.toString());
     if (result != null) {
@@ -63,6 +63,7 @@ class QrScannerController extends GetxController {
       for (var e in responseValidacionQR.mensaje!.estudiante!) {
         itemsTitle.add(e.nombre!);
       }
+      seleccionarTodo.value = false;
       _showModalStudentsList(
           'Alumnos por recoger',
           Constants.EXITO,
@@ -100,8 +101,7 @@ class QrScannerController extends GetxController {
     } catch (e) {
       loadingValidateQrCode.value = false;
       final error = e as ResponseErrorModel;
-      return _showModalErrorLogin(
-          'No dejar pasar', Constants.ERROR, error.mensaje);
+      return _showModalErrorLogin(error.causa, Constants.ERROR, error.mensaje);
     }
   }
 

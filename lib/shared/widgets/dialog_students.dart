@@ -44,119 +44,114 @@ class DialogStudents extends StatelessWidget {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       child: SingleChildScrollView(
-        child: ConstrainedBox(
-          constraints:
-              BoxConstraints(maxHeight: MediaQuery.of(context).size.height),
-          //height: _size.height * 0.7,
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 10,
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  height: _size.height * 0.10,
-                  child: tipo == Constants.EXITO
-                      ? const Image(
-                          image: AssetImage("assets/images/sucess.png"),
-                          alignment: Alignment.center,
-                          fit: BoxFit.contain)
-                      : const Image(
-                          image: AssetImage("assets/images/error.png"),
-                          alignment: Alignment.center,
-                          fit: BoxFit.contain),
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  this.titulo,
-                  textAlign: TextAlign.center,
-                  style: _tituloEstilo,
-                ),
-                SizedBox(height: _size.height * 0.02),
-                Container(
-                  decoration: BoxDecoration(
-                      border: Border.all(width: 0.3, color: Colors.grey)),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Hijos por retirar',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-                ),
-                SizedBox(height: 10),
-                Obx(() {
-                  return CheckboxListTile(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(60)),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    selected: false,
-                    title: Text('Seleccionar todo'),
-                    value: seleccionarTodo.value,
-                    onChanged: (value) => {
-                      seleccionarTodo.value = value!,
-                      if (value)
-                        {controller.selectAll()}
-                      else
-                        {controller.deselectAll()}
-                    },
-                  );
-                }),
-                SimpleGroupedCheckbox(
-                  values: this.valueCheck,
-                  groupStyle:
-                      GroupStyle(itemTitleStyle: TextStyle(fontSize: 15)),
-                  controller: this.controller,
-                  itemsTitle: this.itemsTitle,
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                      border: Border.all(width: 0.3, color: Colors.grey)),
-                ),
-                SizedBox(height: 20),
-                InkWell(
-                  onTap: onTapAcept,
-                  child: Container(
-                    height: 50,
-                    width: 150,
-                    decoration: BoxDecoration(
-                      color: tipo == Constants.EXITO
-                          ? Colors.green
-                          : Color(0xFFED1B30),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Aceptar',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 15,
-                ),
-                InkWell(
-                  onTap: () {
-                    Get.back();
+        // physics: NeverScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 10,
+              ),
+              SizedBox(
+                width: double.infinity,
+                height: _size.height * 0.10,
+                child: tipo == Constants.EXITO
+                    ? const Image(
+                        image: AssetImage("assets/images/sucess.png"),
+                        alignment: Alignment.center,
+                        fit: BoxFit.contain)
+                    : const Image(
+                        image: AssetImage("assets/images/error.png"),
+                        alignment: Alignment.center,
+                        fit: BoxFit.contain),
+              ),
+              SizedBox(
+                height: 5,
+              ),
+              Text(
+                this.titulo,
+                textAlign: TextAlign.center,
+                style: _tituloEstilo,
+              ),
+              SizedBox(height: _size.height * 0.02),
+              Container(
+                decoration: BoxDecoration(
+                    border: Border.all(width: 0.3, color: Colors.grey)),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Hijos por retirar',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+              ),
+              SizedBox(height: 10),
+              Obx(() {
+                return CheckboxListTile(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(60)),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  selected: false,
+                  title: Text('Seleccionar todo'),
+                  value: seleccionarTodo.value,
+                  onChanged: (value) => {
+                    seleccionarTodo.value = value!,
+                    if (value)
+                      {controller.selectAll()}
+                    else
+                      {controller.deselectAll()}
                   },
+                );
+              }),
+              SimpleGroupedCheckbox(
+                values: this.valueCheck,
+                groupStyle: GroupStyle(itemTitleStyle: TextStyle(fontSize: 15)),
+                controller: this.controller,
+                itemsTitle: this.itemsTitle,
+              ),
+              Container(
+                decoration: BoxDecoration(
+                    border: Border.all(width: 0.3, color: Colors.grey)),
+              ),
+              SizedBox(height: 20),
+              InkWell(
+                onTap: onTapAcept,
+                child: Container(
+                  height: 50,
+                  width: 150,
+                  decoration: BoxDecoration(
+                    color: tipo == Constants.EXITO
+                        ? Colors.green
+                        : Color(0xFFED1B30),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   child: Center(
                     child: Text(
-                      'Cancelar',
-                      style: TextStyle(fontSize: 15),
+                      'Aceptar',
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: 10,
+              ),
+              SizedBox(
+                height: 15,
+              ),
+              InkWell(
+                onTap: () {
+                  Get.back();
+                },
+                child: Center(
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(fontSize: 15),
+                  ),
                 ),
-              ],
-            ),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+            ],
           ),
         ),
       ),
