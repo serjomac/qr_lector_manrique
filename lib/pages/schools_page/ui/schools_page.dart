@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:qr_scaner_manrique/core/routes/app_routes.dart';
+import 'package:qr_scaner_manrique/BRACore/routes/app_routes.dart';
 import 'package:qr_scaner_manrique/pages/schools_page/controller/schools_conttroller.dart';
 
 class SchoolsPage extends StatelessWidget {

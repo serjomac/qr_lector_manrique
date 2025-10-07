@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:qr_scaner_manrique/core/routes/app_routes.dart';
+import 'package:qr_scaner_manrique/BRACore/routes/app_routes.dart';
 import 'package:qr_scaner_manrique/pages/qr_scanner/controller/qr_scanner_controller.dart';
 import 'package:qr_scaner_manrique/pages/salida/ui/salida_page.dart';
 import 'package:qr_scaner_manrique/pages/schools_page/ui/schools_page.dart';
@@ -39,7 +39,7 @@ class QrScannerPage extends StatelessWidget {
                     InkWell(
                       onTap: () {
                         Get.offAllNamed(AppRoutes.Schools, arguments: {
-                          'idUser': _.userData!.id
+                          'idUser': _.userData!.idUsuarioAdmin.toString()
                         });
                       },
                       child: Row(
@@ -68,7 +68,7 @@ class QrScannerPage extends StatelessWidget {
                       );
                     } else {
                       return Text(
-                        'Escanear codigo QR',
+                        'Escanear Pinlet',
                         style: TextStyle(fontSize: 17, color: Colors.black),
                       );
                     }

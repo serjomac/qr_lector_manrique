@@ -1,4 +1,4 @@
-package com.example.qr_scaner_manrique
+package com.vionsolutions.botacoraPinlet
 
 import io.flutter.embedding.android.FlutterActivity
 

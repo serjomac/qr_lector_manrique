@@ -1,7 +1,7 @@
-
 // ignore_for_file: unrelated_type_equality_checks
 
 import 'package:flutter/material.dart';
+import 'package:qr_scaner_manrique/utils/AppLocations.dart';
 import 'package:qr_scaner_manrique/utils/constants/constants.dart';
 
 class DialogSuccessError extends StatelessWidget {
@@ -16,20 +16,23 @@ class DialogSuccessError extends StatelessWidget {
       this.titleSize = 25.0,
       required this.mensaje,
       required this.tipo,
-      this.onTapAceptar
-      });
+      this.onTapAceptar});
 
   @override
   Widget build(BuildContext context) {
     final Size _size = MediaQuery.of(context).size;
+    final stringLocations =
+        AppLocalizationsGenerator.appLocalizations(context: context);
     final TextStyle _tituloEstilo = TextStyle(
         fontWeight: FontWeight.bold,
-        color: this.tipo == Constants.EXITO ? Colors.green : tipo == Constants.INFORMATIVO ? Colors.blueGrey : Color(0xFFED1B30),
+        color: this.tipo == Constants.EXITO
+            ? Colors.green
+            : tipo == Constants.INFORMATIVO
+                ? Colors.blueGrey
+                : Color(0xFFED1B30),
         fontSize: this.titleSize);
     final TextStyle _textoEstilo = TextStyle(
-        fontWeight: FontWeight.w300,
-        color: Colors.black,
-        fontSize: 15.0);
+        fontWeight: FontWeight.w300, color: Colors.black, fontSize: 15.0);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -45,21 +48,30 @@ class DialogSuccessError extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(height: 10,),
+                SizedBox(
+                  height: 10,
+                ),
                 SizedBox(
                   width: double.infinity,
                   height: _size.height * 0.23,
                   child: tipo == Constants.EXITO
-                      ? const Image(image: AssetImage("assets/images/sucess.png"),
+                      ? const Image(
+                          image: AssetImage("assets/images/sucess.png"),
                           alignment: Alignment.center,
                           fit: BoxFit.contain)
-                      : tipo == Constants.INFORMATIVO ? const Image(image: AssetImage("assets/images/info.png"),
-                          alignment: Alignment.center,
-                          fit: BoxFit.contain) : const Image(image: AssetImage("assets/images/error.png"),
-                          alignment: Alignment.center,
-                          fit: BoxFit.contain),
+                      : tipo == Constants.INFORMATIVO
+                          ? const Image(
+                              image: AssetImage("assets/images/info.png"),
+                              alignment: Alignment.center,
+                              fit: BoxFit.contain)
+                          : const Image(
+                              image: AssetImage("assets/images/error.png"),
+                              alignment: Alignment.center,
+                              fit: BoxFit.contain),
                 ),
-                SizedBox(height: 5,),
+                SizedBox(
+                  height: 5,
+                ),
                 Text(
                   this.titulo,
                   textAlign: TextAlign.center,
@@ -71,24 +83,37 @@ class DialogSuccessError extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: _textoEstilo,
                 ),
-                SizedBox(height: 5),Container(),
+                SizedBox(height: 5),
+                Container(),
                 SizedBox(height: 15),
                 InkWell(
-                  onTap: onTapAceptar ?? () {
-                     Navigator.pop(context);
-                  },
+                  onTap: onTapAceptar ??
+                      () {
+                        Navigator.pop(context);
+                      },
                   child: Container(
                     height: 50,
                     width: 150,
                     decoration: BoxDecoration(
-                      color: tipo == Constants.EXITO ? Colors.green : tipo == Constants.INFORMATIVO ? Colors.blueGrey : Color(0xFFED1B30),
+                      color: tipo == Constants.EXITO
+                          ? Colors.green
+                          : tipo == Constants.INFORMATIVO
+                              ? Colors.blueGrey
+                              : Color(0xFFED1B30),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Center(child: Text('Aceptar', style: TextStyle(color: Colors.white),),),
+                    child: Center(
+                      child: Text(
+                        stringLocations.acceptLabel,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ),
                 ),
-                SizedBox(height: 10,),
-                ],
+                SizedBox(
+                  height: 10,
+                ),
+              ],
             ),
           ),
         ),

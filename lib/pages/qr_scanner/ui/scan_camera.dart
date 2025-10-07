@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:qr_scaner_manrique/BRACore/extensions/own-color-scheme.dart';
+import 'package:qr_scaner_manrique/utils/AppLocations.dart';
 
 class ScanCamera extends StatefulWidget {
   const ScanCamera({Key? key}) : super(key: key);
@@ -23,6 +25,7 @@ class _ScanCameraState extends State<ScanCamera> {
     if (Platform.isAndroid) {
       controller!.pauseCamera();
     } else if (Platform.isIOS) {
+      controller!.pauseCamera();
       controller!.resumeCamera();
     }
   }
@@ -35,10 +38,15 @@ class _ScanCameraState extends State<ScanCamera> {
 
   @override
   Widget build(BuildContext context) {
+    final stringsLoctaion = AppLocalizationsGenerator.appLocalizations(context: context);
     return Scaffold(
       appBar: AppBar(
-        title: Text("Escanear código QR"),
-        backgroundColor: Color(0XFF1870BF),
+        title: Text(
+          stringsLoctaion.scanPinletLabel,
+          style: TextStyle(color: Theme.of(context).own().primareyTextColor),
+        ),
+        foregroundColor: Theme.of(context).own().primareyTextColor,
+        backgroundColor: Theme.of(context).colorScheme.background,
       ),
       body: Column(
         children: [
@@ -65,10 +73,10 @@ class _ScanCameraState extends State<ScanCamera> {
       onQRViewCreated: _onQRViewCreated,
       formatsAllowed: [BarcodeFormat.qrcode],
       overlay: QrScannerOverlayShape(
-        borderColor: Colors.red,
+        borderColor: Theme.of(context).primaryColor,
         borderRadius: 10,
         borderLength: 30,
-        borderWidth: 10,
+        borderWidth: 5,
         cutOutSize: scanArea,
       ),
     );
@@ -82,7 +90,7 @@ class _ScanCameraState extends State<ScanCamera> {
         Get.back(result: scanData.code);
       }
     });
-    controller.pauseCamera();
-    controller.resumeCamera();
+    // controller.pauseCamera();
+    // controller.resumeCamera();
   }
 }

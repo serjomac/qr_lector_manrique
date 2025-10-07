@@ -1,0 +1,4 @@
+enum CardInvitationType {
+  historial,
+  residentGateEntry
+}

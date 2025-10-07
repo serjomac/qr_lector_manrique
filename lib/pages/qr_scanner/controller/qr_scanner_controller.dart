@@ -2,19 +2,20 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:qr_scaner_manrique/core/api/api_managr.dart';
-import 'package:qr_scaner_manrique/core/api/local_api.dart';
-import 'package:qr_scaner_manrique/core/models/request_models/request_retirar.dart';
-import 'package:qr_scaner_manrique/core/models/request_models/validate_qr_code.dart';
-import 'package:qr_scaner_manrique/core/models/response_models/area_model.dart';
-import 'package:qr_scaner_manrique/core/models/response_models/auth_login.dart';
-import 'package:qr_scaner_manrique/core/models/response_models/error_response_model.dart';
-import 'package:qr_scaner_manrique/core/models/response_models/validation_qr_response.dart';
+import 'package:qr_scaner_manrique/BRACore/api/api_managr.dart';
+import 'package:qr_scaner_manrique/BRACore/api/local_api.dart';
+import 'package:qr_scaner_manrique/BRACore/models/request_models/request_retirar.dart';
+import 'package:qr_scaner_manrique/BRACore/models/request_models/validate_qr_code.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/area_model.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/auth_login.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/error_response_model.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/validation_qr_response.dart';
 import 'package:qr_scaner_manrique/pages/qr_scanner/ui/scan_camera.dart';
 import 'package:qr_scaner_manrique/shared/widgets/dialog_students.dart';
 import 'package:qr_scaner_manrique/shared/widgets/dialog_sucess_error.dart';
 import 'package:qr_scaner_manrique/utils/constants/constants.dart';
 import 'package:checkbox_grouped/checkbox_grouped.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class QrScannerController extends GetxController {
   ApiManager apiManager = ApiManager();
@@ -22,12 +23,14 @@ class QrScannerController extends GetxController {
 
   AuthLoginModel? userData;
   Area? area;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   GroupController controller = GroupController(isMultipleSelection: true);
 
   RxBool loadingValidateQrCode = false.obs;
   RxBool seleccionarTodo = false.obs;
   List<Estudiante> _studentsList = [];
   List<Estudiante> _studentsSelected = [];
+  QRViewController? qrController;
 
   @override
   void onInit() async {
@@ -38,14 +41,18 @@ class QrScannerController extends GetxController {
   }
 
   Future<void> scanCode() async {
-    final result = await Get.to(
-      const ScanCamera(),
-      fullscreenDialog: true,
-      duration: const Duration(milliseconds: 400),
-    );
-    log('RESPUESTA QR' + result.toString());
-    if (result != null) {
-      validateQrCode(result, area!.id!);
+    try {
+      final result = await Get.to(
+        const ScanCamera(),
+        fullscreenDialog: true,
+        duration: const Duration(milliseconds: 400),
+      );
+      log('RESPUESTA QR' + result.toString());
+      if (result != null) {
+        validateQrCode(result, area!.id!);
+      }
+    } catch (e) {
+      print(e);
     }
   }
 

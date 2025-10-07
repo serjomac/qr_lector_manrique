@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "474034801656",
+    "project_id": "pinlet-978fb",
+    "storage_bucket": "pinlet-978fb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:474034801656:android:1cc9dd93fc2ce45b52640d",
+        "android_client_info": {
+          "package_name": "com.pinlet.qr_ticket"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsooRA-pRsU_EFOc0QOZdzRqWI342KxCA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:474034801656:android:a0f66978085e919952640d",
+        "android_client_info": {
+          "package_name": "com.vionsolutions.botacoraPinlet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsooRA-pRsU_EFOc0QOZdzRqWI342KxCA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:474034801656:android:57f19e5b616ca38852640d",
+        "android_client_info": {
+          "package_name": "com.vionsolutions.qrticket"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsooRA-pRsU_EFOc0QOZdzRqWI342KxCA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

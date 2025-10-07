@@ -1,7 +1,7 @@
 // ignore_for_file: unrelated_type_equality_checks
 
 import 'package:flutter/material.dart';
-import 'package:qr_scaner_manrique/core/models/response_models/validation_qr_response.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/validation_qr_response.dart';
 import 'package:qr_scaner_manrique/utils/constants/constants.dart';
 import 'package:checkbox_grouped/checkbox_grouped.dart';
 import 'package:get/get.dart';

@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
-import 'package:qr_scaner_manrique/core/api/api_managr.dart';
-import 'package:qr_scaner_manrique/core/api/local_api.dart';
-import 'package:qr_scaner_manrique/core/models/request_models/request_areas.dart';
-import 'package:qr_scaner_manrique/core/models/response_models/area_model.dart';
+import 'package:qr_scaner_manrique/BRACore/api/api_managr.dart';
+import 'package:qr_scaner_manrique/BRACore/api/local_api.dart';
+import 'package:qr_scaner_manrique/BRACore/models/request_models/request_areas.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/area_model.dart';
 
 class SchoolsController extends GetxController {
 
