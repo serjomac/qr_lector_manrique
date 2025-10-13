@@ -182,10 +182,12 @@ class ApiManager {
     }
   }
 
-  Future<List<GateDoor>> fetchEntrances(String placeId) async {
+  Future<List<GateDoor>> fetchEntrances(String placeId, String tipo) async {
     try {
-      final resp =
-          await _dio.post('/getAllPuerta_lugarBitacora', data: {'id_lugar': placeId});
+      final resp = await _dio.post('/getAllPuerta_lugarBitacora', data: {
+        'id_lugar': placeId,
+        'tipo': tipo,
+      });
       log('RESPONSE ENTRANCES: ' + json.encode(resp.data));
       final responseMap = entranceFromJson(json.encode(resp.data));
       return responseMap;

@@ -3,8 +3,11 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_scaner_manrique/BRACore/api/api_parking.dart';
 import 'package:qr_scaner_manrique/BRACore/enums/main_parking_entry.dart';
+import 'package:qr_scaner_manrique/BRACore/extensions/string_extensions.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
 import 'dart:io';
+
+import 'package:qr_scaner_manrique/shared/widgets/invitation_card.dart';
 
 class ValidateParkingController extends GetxController {
   // Vehicle data from previous page
@@ -37,7 +40,7 @@ class ValidateParkingController extends GetxController {
   int selectedTabIndex = 0;
 
   // Lista de imágenes placeholder
-  List<String> imageUrls = List.generate(4, (index) => '');
+  List<String> imageUrls = List.generate(0, (index) => '');
   
   // Estado del ticket
   bool isTicketExpired = true;
@@ -88,6 +91,8 @@ class ValidateParkingController extends GetxController {
         selectedTabIndex = 2; // Salida
         break;
     }
+    // Trigger UI update
+    update();
   }
 
   @override
@@ -113,15 +118,51 @@ class ValidateParkingController extends GetxController {
     super.onClose();
   }
 
+  String getCurrentTabTitle() {
+    switch (mainParkingEntry) {
+      case MainParkingEntry.entry:
+        return "Regsitro de ingreso";
+      case MainParkingEntry.validation:
+        return "Validación de ticket";
+      case MainParkingEntry.exit:
+        return "Regsitro de salida";
+      default:
+        return "";
+    }
+  }
+
   void initializeData() {
     // Usar datos reales del vehículo
-    nameController.text = vehicleData.nombres?.toString() ?? "";
-    cedulaController.text = vehicleData.ingreso?.cedulaResidente ?? "";
-    celularController.text = vehicleData.ingreso?.celularResidente?.toString() ?? "";
-    observacionController.text = vehicleData.observacion?.toString() ?? "";
-    placaController.text = vehicleData.ingreso?.placa ?? "";
-    fechaController.text = _formatDateTime(vehicleData.fechaIngreso);
-    puertaController.text = vehicleData.nombrePuerta?.toString() ?? "Sin puerta";
+    final names = vehicleData.ingreso?.nombresInvitado ?? ('${vehicleData.ingreso?.nombresResidente} ${vehicleData.ingreso?.apellidosResidente?.getFirstName}');
+    nameController.text = names;
+    placaController.text = vehicleData.ingreso?.placa?.toUpperCase() ?? '';
+    
+    // Campos específicos según el tipo de entrada
+    switch (mainParkingEntry) {
+      case MainParkingEntry.entry:
+        puertaController.text = vehicleData.ingreso?.nombrePuertaIngreso?.toString() ?? "Sin puerta";
+        fechaController.text = _formatDateTime(vehicleData.ingreso?.fechaIngreso);
+        cedulaController.text = vehicleData.ingreso?.cedula ?? "";
+        celularController.text = vehicleData.ingreso?.celular?.toString() ?? "";
+        observacionController.text = vehicleData.ingreso?.observacionIngreso?.toString() ?? "";
+        break;
+        
+      case MainParkingEntry.validation:
+        puertaController.text = vehicleData.ingreso?.nombrePuertaIngreso?.toString() ?? "Sin puerta";
+        fechaController.text = _formatDateTime(vehicleData.ingreso?.fechaValidacion);
+        cedulaController.text = vehicleData.ingreso?.cedula ?? "";
+        celularController.text = vehicleData.ingreso?.celular?.toString() ?? "";
+        observacionController.text = vehicleData.ingreso?.observacionValidacion?.toString() ?? "";
+        break;
+        
+      case MainParkingEntry.exit:
+        puertaController.text = vehicleData.ingreso?.nombrePuertaSalida?.toString() ?? "Sin puerta";
+        fechaController.text = _formatDateTime(vehicleData.ingreso?.fechaSalida);
+        cedulaController.text = vehicleData.ingreso?.cedula ?? "";
+        celularController.text = vehicleData.ingreso?.celular?.toString() ?? "";
+        observacionController.text = vehicleData.ingreso?.observacionSalida?.toString() ?? "";
+        break;
+    }
     
     // Datos de validación
     tiempoTotalController.text = vehicleData.ingreso?.tiempoTotal ?? '';
@@ -140,7 +181,7 @@ class ValidateParkingController extends GetxController {
   void _loadImagesByEntryType() {
     switch (mainParkingEntry) {
       case MainParkingEntry.validation:
-        // Modo validación: cargar imágenes informativas desde vehicleData.ingreso.imgIngreso
+        // Modo validación: cargar imágenes informativas desde vehicleData.ingreso.imgValidacion
         _loadValidationImages();
         break;
       case MainParkingEntry.entry:
@@ -155,10 +196,10 @@ class ValidateParkingController extends GetxController {
   }
   
   void _loadValidationImages() {
-    if (vehicleData.ingreso?.imgIngreso != null && vehicleData.ingreso!.imgIngreso!.toString().isNotEmpty) {
+    if (vehicleData.ingreso?.imgValidacion != null && vehicleData.ingreso!.imgValidacion!.toString().isNotEmpty) {
       // Hacer split de las imágenes separadas por coma
-      List<String> imagePaths = vehicleData.ingreso!.imgIngreso!.toString().split(',');
-      
+      List<String> imagePaths = vehicleData.ingreso!.imgValidacion!.toString().split(',');
+
       // Limpiar espacios en blanco y filtrar entradas vacías
       imagePaths = imagePaths.map((path) => path.trim()).where((path) => path.isNotEmpty).toList();
       
@@ -166,12 +207,12 @@ class ValidateParkingController extends GetxController {
       int imageCount = imagePaths.length > 4 ? 4 : imagePaths.length;
       
       // Inicializar la lista con las imágenes disponibles
-      imageUrls = List.generate(4, (index) {
+      imageUrls = List.generate(imageCount, (index) {
         return index < imageCount ? imagePaths[index] : '';
       });
     } else {
       // Si no hay imágenes, inicializar lista vacía
-      imageUrls = List.generate(4, (index) => '');
+      imageUrls = List.generate(0, (index) => '');
     }
   }
   
@@ -181,7 +222,7 @@ class ValidateParkingController extends GetxController {
       List<String> imagePaths = vehicleData.ingreso!.imgIngreso!.toString().split(',');
       imagePaths = imagePaths.map((path) => path.trim()).where((path) => path.isNotEmpty).toList();
       int imageCount = imagePaths.length > 4 ? 4 : imagePaths.length;
-      imageUrls = List.generate(4, (index) {
+      imageUrls = List.generate(imagePaths.length, (index) {
         return index < imageCount ? imagePaths[index] : '';
       });
     } else {
@@ -195,11 +236,11 @@ class ValidateParkingController extends GetxController {
       List<String> imagePaths = vehicleData.ingreso!.imgSalida!.toString().split(',');
       imagePaths = imagePaths.map((path) => path.trim()).where((path) => path.isNotEmpty).toList();
       int imageCount = imagePaths.length > 4 ? 4 : imagePaths.length;
-      imageUrls = List.generate(4, (index) {
+      imageUrls = List.generate(imagePaths.length, (index) {
         return index < imageCount ? imagePaths[index] : '';
       });
     } else {
-      imageUrls = List.generate(4, (index) => '');
+      imageUrls = List.generate(0, (index) => '');
     }
   }
 
@@ -304,35 +345,55 @@ class ValidateParkingController extends GetxController {
     try {
       isValidating.value = true;
       
-      // Preparar parámetros para la validación
+      // Preparar parámetros comunes
       final String idIngreso = vehicleData.idIngreso?.toString() ?? '';
       final String idLugar = vehicleData.idLugar?.toString() ?? '';
+      final String idPuerta = vehicleData.idPuerta?.toString() ?? '';
       
       // Preparar lista de imágenes
       List<File> imagenes = validacionImages;
       
-      // Llamar al servicio de validación
-      // ignore: unused_local_variable
-      final response = await _apiParking.validarParqueoRegistro(
-        idIngreso: idIngreso,
-        idLugar: idLugar,
-        imagenes: imagenes.isNotEmpty ? imagenes : null,
-        observacion: observacionValidacionController.text,
-        tiempoTotal: tiempoTotalController.text,
-        tiempoHorasPago: tiempoPagoController.text,
-        tarifaAplicada: tarifaController.text,
-        valorTotal: totalController.text,
-        estado: 'VALIDO',
-        placa: placaController.text,
-        especial: 'S',
-      );
+      // Determinar qué servicio llamar según el modo
+      if (mainParkingEntry == MainParkingEntry.exit) {
+        // Modo salida: llamar al servicio de salida
+        await _apiParking.salidaParqueoRegistro(
+          idIngreso: idIngreso,
+          idPuerta: idPuerta,
+          idLugar: idLugar,
+          placa: placaController.text,
+          imagenes: imagenes.isNotEmpty ? imagenes : null,
+          observacion: observacionValidacionController.text,
+        );
+      } else {
+        // Modo validación: llamar al servicio de validación
+        await _apiParking.validarParqueoRegistro(
+          idIngreso: idIngreso,
+          idLugar: idLugar,
+          imagenes: imagenes.isNotEmpty ? imagenes : null,
+          observacion: observacionValidacionController.text,
+          tiempoTotal: tiempoTotalController.text,
+          tiempoHorasPago: tiempoPagoController.text,
+          tarifaAplicada: tarifaController.text,
+          valorTotal: totalController.text,
+          estado: 'VALIDO',
+          placa: placaController.text,
+          especial: 'S',
+        );
+      }
 
       Get.back(result: true);
       
-      // Mostrar mensaje de éxito
+      // Mostrar mensaje de éxito según el modo
+      final String successTitle = mainParkingEntry == MainParkingEntry.exit 
+          ? 'Salida Registrada' 
+          : 'Validación Exitosa';
+      final String successMessage = mainParkingEntry == MainParkingEntry.exit
+          ? 'La salida del parqueo ha sido registrada correctamente'
+          : 'El parqueo ha sido validado correctamente';
+      
       Get.snackbar(
-        'Validación Exitosa',
-        'El parqueo ha sido validado correctamente',
+        successTitle,
+        successMessage,
         backgroundColor: Colors.green.withOpacity(0.8),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -343,10 +404,15 @@ class ValidateParkingController extends GetxController {
       update();
       
     } catch (e) {
-      print('Error en validación: $e');
+      print('Error en ${mainParkingEntry == MainParkingEntry.exit ? 'salida' : 'validación'}: $e');
+      
+      final String errorMessage = mainParkingEntry == MainParkingEntry.exit
+          ? 'No se pudo registrar la salida del parqueo. Intenta nuevamente.'
+          : 'No se pudo validar el parqueo. Intenta nuevamente.';
+      
       Get.snackbar(
         'Error',
-        'No se pudo validar el parqueo. Intenta nuevamente.',
+        errorMessage,
         backgroundColor: Colors.red.withOpacity(0.8),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,

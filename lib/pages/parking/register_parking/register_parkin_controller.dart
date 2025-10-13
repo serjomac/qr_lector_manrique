@@ -1,7 +1,12 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
 
 class RegisterParkinController extends GetxController {
+  // Parking response data (requerido, cuando viene desde QR)
+  final ParrkingResponse parkingResponse;
+
+  RegisterParkinController({required this.parkingResponse});
   // Text controllers for form fields
   final TextEditingController nombreController = TextEditingController();
   final TextEditingController cedulaController = TextEditingController();
@@ -22,20 +27,16 @@ class RegisterParkinController extends GetxController {
   String selectedTipoInvitado = 'Ocasional';
   final List<String> tiposInvitado = ['Ocasional', 'Permanente', 'Temporal'];
   
-  @override
+    @override
   void onInit() {
     super.onInit();
-    // Initialize with default values from Figma
-    nombreController.text = 'Martha Delgado';
-    cedulaController.text = '0922429735';
-    celularController.text = '0922429735';
-    placaController.text = 'GRV0651';
     
-    // Valores para el tab de Residente
-    nombreResidenteController.text = 'David Macías';
-    celularResidenteController.text = '0981234567';
-    primarioController.text = 'SOLAR';
-    secundarioController.text = '1';
+    // Llenar campos con datos del vehículo escaneado
+    nombreController.text = parkingResponse.nombres ?? '';
+    cedulaController.text = parkingResponse.cedula ?? '';
+    celularController.text = parkingResponse.celular ?? '';
+    placaController.text = parkingResponse.placa ?? '';
+    motivoController.text = parkingResponse.observacion ?? '';
   }
   
   void selectTab(int index) {

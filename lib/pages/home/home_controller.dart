@@ -86,7 +86,7 @@ class HomeController extends GetxController {
   fetchEntrances({required String placeId}) async {
     try {
       entrancesLoading.value = true;
-      entrances = await apiManager.fetchEntrances(placeId);
+      entrances = await apiManager.fetchEntrances(placeId, propertyEntryType.doorType);
       entrancesLoading.value = false;
       entranceIdSelected = entrances[0];
       update();

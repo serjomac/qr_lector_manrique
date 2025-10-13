@@ -19,10 +19,13 @@ import 'package:qr_scaner_manrique/shared/widgets/take_photo_card.dart';
 import 'package:qr_scaner_manrique/utils/AppLocations.dart';
 
 class AddEntryFormPage extends StatelessWidget {
+  final LectorResponse? lectorResponse;
+  
+  const AddEntryFormPage({Key? key, this.lectorResponse}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     AddEntryFormController entranceFormController =
-        Get.put(AddEntryFormController());
+        Get.put(AddEntryFormController(lectorResponse: lectorResponse));
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
     final stringLocations = AppLocalizationsGenerator.appLocalizations(context: context);

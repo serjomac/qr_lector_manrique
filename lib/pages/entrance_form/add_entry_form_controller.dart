@@ -35,6 +35,10 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class AddEntryFormController extends GetxController
     with GetSingleTickerProviderStateMixin {
+  // Datos del lector (opcional, cuando viene desde QR)
+  final LectorResponse? lectorResponse;
+
+  AddEntryFormController({this.lectorResponse});
   String name = '';
   String lastName = '';
   String email = '';
@@ -146,7 +150,11 @@ class AddEntryFormController extends GetxController
     if (arguments['typeDoor'] != null) {
       typeDoor = arguments['typeDoor'] as TypeDoor;
     }
-    if (arguments['guessScanned'] != null) {
+    
+    // Si hay lectorResponse del constructor (viene de QR), úsalo
+    if (lectorResponse != null) {
+      guessScanned = lectorResponse;
+    } else if (arguments['guessScanned'] != null) {
       guessScanned = arguments['guessScanned'] as LectorResponse;
     } else if (mainActionType == MainActionType.qrScannerEntry) {
       guessScanned = LectorResponse(

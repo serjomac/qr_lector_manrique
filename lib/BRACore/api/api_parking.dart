@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:qr_scaner_manrique/BRACore/api/dio_client.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/error_response_model.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/register_manual_parking_response.dart';
 
 class ApiParking {
   final Dio _dio = DioClient().dio;
@@ -65,6 +66,7 @@ class ApiParking {
         mensaje: e.response?.data['mensaje'] ?? 'Unknown error',
         causa: e.response?.data['causa'] ?? 'Unknown cause',
       );
+      log(json.encode(errorModel));
       return Future.error(errorModel);
     }
   }
@@ -157,6 +159,118 @@ class ApiParking {
       ResponseErrorModel errorModel = ResponseErrorModel(
         codigoError: e.response?.statusCode ?? 0,
         mensaje: e.response?.data['mensaje'] ?? 'Error al leer QR de parqueo',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }
+
+  Future<RegisterManualParkingResponse> insertParqueoRegistro({
+    required String idPuerta,
+    required String idLugar,
+    required String nombre,
+    required String cedula,
+    required String celular,
+    required String placa,
+    required String observacion,
+    required String fechaIngreso,
+    List<File>? imagenes,
+  }) async {
+    try {
+      // Crear FormData
+      FormData formData = FormData.fromMap({
+        'id_puerta': idPuerta,
+        'id_lugar': idLugar,
+        'nombre': nombre,
+        'cedula': cedula,
+        'celular': celular,
+        'placa': placa,
+        'observacion': observacion,
+        'fecha_ingreso': fechaIngreso,
+      });
+
+      // Agregar imágenes si existen
+      if (imagenes != null && imagenes.isNotEmpty) {
+        for (int i = 0; i < imagenes.length; i++) {
+          String fileName = imagenes[i].path.split('/').last;
+          formData.files.add(MapEntry(
+            'imagenes[]',
+            await MultipartFile.fromFile(
+              imagenes[i].path,
+              filename: fileName,
+            ),
+          ));
+        }
+      }
+
+      final response = await _dio.post(
+        '/insertParqueoRegistro',
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      log('insertParqueoRegistro response: ${json.encode(response.data)}');
+      return RegisterManualParkingResponse.fromJson(response.data);
+    } on DioError catch (e) {
+      log('Error in insertParqueoRegistro: ${e.toString()}');
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Error al registrar parqueo',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }
+
+  Future<Map<String, dynamic>> salidaParqueoRegistro({
+    required String idIngreso,
+    required String idPuerta,
+    required String idLugar,
+    required String placa,
+    List<File>? imagenes,
+    String? observacion,
+  }) async {
+    try {
+      // Crear FormData
+      FormData formData = FormData.fromMap({
+        'id_ingreso': idIngreso,
+        'id_puerta': idPuerta,
+        'id_lugar': idLugar,
+        'placa': placa,
+        'observacion': observacion ?? '',
+      });
+
+      // Agregar imágenes si existen
+      if (imagenes != null && imagenes.isNotEmpty) {
+        for (int i = 0; i < imagenes.length; i++) {
+          String fileName = imagenes[i].path.split('/').last;
+          formData.files.add(MapEntry(
+            'imagenes[]',
+            await MultipartFile.fromFile(
+              imagenes[i].path,
+              filename: fileName,
+            ),
+          ));
+        }
+      }
+
+      final response = await _dio.post(
+        '/salidaParqueoRegistro',
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      log('salidaParqueoRegistro response: ${json.encode(response.data)}');
+      return response.data;
+    } on DioError catch (e) {
+      log('Error in salidaParqueoRegistro: ${e.toString()}');
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Error al registrar salida de parqueo',
         causa: e.response?.data['causa'] ?? 'Unknown cause',
       );
       return Future.error(errorModel);

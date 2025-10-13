@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/Texts/BRAText.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
 import 'register_parkin_controller.dart';
 
 class RegisterParkinPage extends StatelessWidget {
-  const RegisterParkinPage({Key? key}) : super(key: key);
+  final ParrkingResponse parkingResponse;
+  
+  const RegisterParkinPage({Key? key, required this.parkingResponse}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: GetBuilder<RegisterParkinController>(
-        init: RegisterParkinController(),
+        init: RegisterParkinController(parkingResponse: parkingResponse),
         builder: (controller) {
           return SafeArea(
             child: Column(

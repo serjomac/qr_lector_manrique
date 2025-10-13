@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:qr_scaner_manrique/BRAUXComponents/textField/custom_text_form_field.dart';
 import 'package:qr_scaner_manrique/shared/widgets/custom_text_field.dart';
 import 'exit_with_qr_request_form_controller.dart';
 
@@ -188,11 +189,13 @@ class ExitWithQrRequestFormPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Obx(() => CustomTextField(
-          value: value.value,
+        Obx(() => CustomTextFormField(
+          focusNode: FocusNode(),
+          label: '',
+          initialValue: value.value,
           onChanged: onChanged,
-          borderColor: const Color(0xFF85736F),
-          textColor: const Color(0xFF534340),
+          // borderColor: const Color(0xFF85736F),
+          // textColor: const Color(0xFF534340),
           // inputType: TextInputType.text,
           // hintText: label,
         )),

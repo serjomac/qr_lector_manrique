@@ -1,0 +1,277 @@
+import 'dart:convert';
+import 'dart:developer';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:qr_scaner_manrique/BRACore/api/dio_client.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/error_response_model.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/register_manual_parking_response.dart';
+
+class ApiParking {
+  final Dio _dio = DioClient().dio;
+
+  Future<List<ParrkingResponse>> getAllParqueoIngreso({
+    required String placeId,
+    required String startDate,
+    required String endDate,
+    required String entryType, // "I" para ingreso, "S" para salida
+    required String doorId,
+  }) async {
+    try {
+      final response = await _dio.post('/getAllParqueoIngreso', data: {
+        'id_lugar': placeId,
+        'fecha_inicio': startDate,
+        'fecha_termino': endDate,
+        'tipo_ingreso': entryType,
+        'id_puerta': doorId,
+      });
+      log(json.encode(response.data));
+      final res = parrkingResponseFromJson(json.encode(response.data));
+      return res;
+    } on DioError catch (e) {
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Unknown error',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }
+
+  Future<ParrkingResponse> getParqueoIngreso({
+    required String idIngreso,
+    required String idLugar,
+    required String idPuerta,
+    required String tipoIngreso, // "V" para validación
+    required String idUsuarioAdmin,
+  }) async {
+    try {
+      final response = await _dio.post('/getParqueoIngreso', data: {
+        'id_ingreso': idIngreso,
+        'id_lugar': idLugar,
+        'id_puerta': idPuerta,
+        'tipo_ingreso': tipoIngreso,
+        'id_usuario_admin': idUsuarioAdmin,
+      });
+      log(json.encode(response.data));
+      
+      // Parse as single object instead of list
+      final Map<String, dynamic> responseData = response.data;
+      final res = ParrkingResponse.fromJson(responseData);
+      return res;
+    } on DioError catch (e) {
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Unknown error',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }
+
+  Future<Map<String, dynamic>> validarParqueoRegistro({
+    required String idIngreso,
+    required String idLugar,
+    List<File>? imagenes,
+    String? observacion,
+    String? tiempoTotal,
+    String? tiempoHorasPago,
+    String? tarifaAplicada,
+    String? valorTotal,
+    String? estado,
+    String? placa,
+    String? especial,
+  }) async {
+    try {
+      // Crear FormData
+      FormData formData = FormData.fromMap({
+        'id_ingreso': idIngreso,
+        'id_lugar': idLugar,
+        'observacion': observacion ?? '',
+        'tiempo_total': tiempoTotal ?? '',
+        'tiempo_horas_pago': tiempoHorasPago ?? '',
+        'tarifa_aplicada': tarifaAplicada ?? '',
+        'valor_total': valorTotal ?? '',
+        'estado': estado ?? 'VALIDO',
+        'placa': placa ?? '',
+        'especial': especial ?? 'S',
+      });
+
+      // Agregar imágenes si existen
+      if (imagenes != null && imagenes.isNotEmpty) {
+        for (int i = 0; i < imagenes.length; i++) {
+          String fileName = imagenes[i].path.split('/').last;
+          formData.files.add(MapEntry(
+            'imagenes[]',
+            await MultipartFile.fromFile(
+              imagenes[i].path,
+              filename: fileName,
+            ),
+          ));
+        }
+      }
+
+      final response = await _dio.post(
+        '/validarParqueoRegistro',
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      log('validarParqueoRegistro response: ${json.encode(response.data)}');
+      return response.data;
+    } on DioError catch (e) {
+      log('Error in validarParqueoRegistro: ${e.toString()}');
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Error al validar parqueo',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }
+
+  Future<ParrkingResponse> lectorParqueo({
+    required String codigo,
+    required String idLugar,
+    required String idPuerta,
+    required String tipoIngreso, // "I", "S", "V"
+    required String idUsuarioAdmin,
+  }) async {
+    try {
+      final response = await _dio.post('/lectorParqueo', data: {
+        'codigo': codigo,
+        'id_lugar': idLugar,
+        'id_puerta': idPuerta,
+        'tipo_ingreso': tipoIngreso,
+        'id_usuario_admin': idUsuarioAdmin,
+      });
+      log('lectorParqueo response: ${json.encode(response.data)}');
+      
+      // Parse as single object
+      final Map<String, dynamic> responseData = response.data;
+      final res = ParrkingResponse.fromJson(responseData);
+      return res;
+    } on DioError catch (e) {
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Error al leer QR de parqueo',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }
+
+  Future<RegisterManualParkingResponse> insertParqueoRegistro({
+    required String idPuerta,
+    required String idLugar,
+    required String nombre,
+    required String cedula,
+    required String celular,
+    required String placa,
+    required String observacion,
+    required String fechaIngreso,
+    List<File>? imagenes,
+  }) async {
+    try {
+      // Crear FormData
+      FormData formData = FormData.fromMap({
+        'id_puerta': idPuerta,
+        'id_lugar': idLugar,
+        'nombre': nombre,
+        'cedula': cedula,
+        'celular': celular,
+        'placa': placa,
+        'observacion': observacion,
+        'fecha_ingreso': fechaIngreso,
+      });
+
+      // Agregar imágenes si existen
+      if (imagenes != null && imagenes.isNotEmpty) {
+        for (int i = 0; i < imagenes.length; i++) {
+          String fileName = imagenes[i].path.split('/').last;
+          formData.files.add(MapEntry(
+            'imagenes[]',
+            await MultipartFile.fromFile(
+              imagenes[i].path,
+              filename: fileName,
+            ),
+          ));
+        }
+      }
+
+      final response = await _dio.post(
+        '/insertParqueoRegistro',
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      log('insertParqueoRegistro response: ${json.encode(response.data)}');
+      return RegisterManualParkingResponse.fromJson(response.data);
+    } on DioError catch (e) {
+      log('Error in insertParqueoRegistro: ${e.toString()}');
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Error al registrar parqueo',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }
+
+  Future<Map<String, dynamic>> salidaParqueoRegistro({
+    required String idIngreso,
+    required String idPuerta,
+    required String idLugar,
+    required String placa,
+    List<File>? imagenes,
+    String? observacion,
+  }) async {
+    try {
+      // Crear FormData
+      FormData formData = FormData.fromMap({
+        'id_ingreso': idIngreso,
+        'id_puerta': idPuerta,
+        'id_lugar': idLugar,
+        'placa': placa,
+        'observacion': observacion ?? '',
+      });
+
+      // Agregar imágenes si existen
+      if (imagenes != null && imagenes.isNotEmpty) {
+        for (int i = 0; i < imagenes.length; i++) {
+          String fileName = imagenes[i].path.split('/').last;
+          formData.files.add(MapEntry(
+            'imagenes[]',
+            await MultipartFile.fromFile(
+              imagenes[i].path,
+              filename: fileName,
+            ),
+          ));
+        }
+      }
+
+      final response = await _dio.post(
+        '/salidaParqueoRegistro',
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      log('salidaParqueoRegistro response: ${json.encode(response.data)}');
+      return response.data;
+    } on DioError catch (e) {
+      log('Error in salidaParqueoRegistro: ${e.toString()}');
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Error al registrar salida de parqueo',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }

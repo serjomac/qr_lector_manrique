@@ -279,39 +279,39 @@ extension VehicleStatusExtension on VehicleStatus {
   Color get backgroundColor {
     switch (this) {
       case VehicleStatus.ingresado:
-        return const Color(0xFFE3F2FD);
+        return const Color(0xFFFEEFC8); // Light orange
       case VehicleStatus.retirado:
-        return const Color(0xFFFFF3E0);
+        return const Color(0xFFFEC8C8); // Light red
       case VehicleStatus.validado:
-        return const Color(0xFFCFF9E6);
+        return const Color(0xFFCFF9E6); // Light green
       case VehicleStatus.caducado:
-        return const Color(0xFFFFEBEE);
+        return const Color(0xFFE5E8EC); // Light gray
     }
   }
   
   Color get textColor {
     switch (this) {
       case VehicleStatus.ingresado:
-        return const Color(0xFF1976D2);
+        return const Color(0xFFB86E00); // Orange
       case VehicleStatus.retirado:
-        return const Color(0xFFF57C00);
+        return const Color(0xFFA10101); // Red
       case VehicleStatus.validado:
-        return const Color(0xFF036546);
+        return const Color(0xFF036546); // Green
       case VehicleStatus.caducado:
-        return const Color(0xFFD32F2F);
+        return const Color(0xFF565656); // Gray
     }
   }
   
   Color get borderColor {
     switch (this) {
       case VehicleStatus.ingresado:
-        return const Color(0xFF1976D2);
+        return const Color(0xFFB86E00); // Orange
       case VehicleStatus.retirado:
-        return const Color(0xFFF57C00);
+        return const Color(0xFFA10101); // Red
       case VehicleStatus.validado:
-        return const Color(0xFF036546);
+        return const Color(0xFF036546); // Green
       case VehicleStatus.caducado:
-        return const Color(0xFFD32F2F);
+        return const Color(0xFF565656); // Gray
     }
   }
 }

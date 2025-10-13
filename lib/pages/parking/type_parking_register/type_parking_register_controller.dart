@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:qr_scaner_manrique/BRACore/api/api_parking.dart';
+import 'package:qr_scaner_manrique/BRACore/api/api_lector.dart';
 import 'package:qr_scaner_manrique/BRACore/enums/main_parking_entry.dart';
 import 'package:qr_scaner_manrique/BRACore/models/user_data.dart';
 import 'package:qr_scaner_manrique/pages/parking/validate_parking/validate_parking_page.dart';
@@ -8,6 +9,7 @@ import 'package:qr_scaner_manrique/pages/parking/vehicle_list/vehicles_list_page
 import 'package:qr_scaner_manrique/pages/qr_scanner/ui/scan_camera.dart';
 import 'package:qr_scaner_manrique/pages/parking/type_parking_register/search_code_modal.dart';
 import 'package:qr_scaner_manrique/pages/parking/register_parking/manual/manual_parking_register_page.dart';
+import 'package:qr_scaner_manrique/pages/entrance_form/add_entry_form_page.dart';
 
 enum ParkingValidationType {
   qr,
@@ -22,8 +24,9 @@ class TypeParkingRegisterController extends GetxController {
   // Main parking entry type
   final MainParkingEntry mainParkingEntry;
 
-  // API instance
+  // API instances
   final ApiParking _apiParking = ApiParking();
+  final ApiLector _apiLector = ApiLector();
 
   // Constructor
   TypeParkingRegisterController({
@@ -44,15 +47,6 @@ class TypeParkingRegisterController extends GetxController {
 
   // Método para continuar con la opción seleccionada
   void continueWithSelectedType() {
-    if (selectedType.value == null) {
-      Get.snackbar(
-        'Informativo',
-        'Debe seleccionar un tipo de validación antes de continuar',
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 3),
-      );
-      return;
-    }
 
     isLoading.value = true;
 
@@ -99,35 +93,50 @@ class TypeParkingRegisterController extends GetxController {
             UserData.sharedInstance.userLogin?.idUsuarioAdmin?.toString() ??
                 '5';
 
-        final vehicleData = await _apiParking.lectorParqueo(
-          codigo: qrResult,
-          idLugar: placeId,
-          idPuerta: doorId ?? '1',
-          tipoIngreso: 'V', // Salida
-          idUsuarioAdmin: idUsuarioAdmin,
-        );
+        // Determinar el tipo de ingreso según el mainParkingEntry
+        String tipoIngreso;
+        switch (mainParkingEntry) {
+          case MainParkingEntry.entry:
+            tipoIngreso = 'I'; // Ingreso
+            break;
+          case MainParkingEntry.exit:
+            tipoIngreso = 'S'; // Salida
+            break;
+          case MainParkingEntry.validation:
+          default:
+            tipoIngreso = 'V'; // Validación
+            break;
+        }
 
-        // Navegar a ValidateParkingPage
-        Get.to(() => ValidateParkingPage(
-              vehicleData: vehicleData,
-              mainParkingEntry: MainParkingEntry.validation,
-            ));
-      } else {
-        Get.snackbar(
-          'Error',
-          'No se pudo escanear el código QR',
-          backgroundColor: Colors.red.withOpacity(0.8),
-          colorText: Colors.white,
-        );
+        // Para entrada general, usar ApiLector.validateQrCode()
+        if (mainParkingEntry == MainParkingEntry.entry) {
+          final lectorResponse = await _apiLector.validateQrCode(
+            code: qrResult,
+            placeId: placeId,
+            entranceId: doorId ?? '1',
+            userId: idUsuarioAdmin,
+          );
+
+          // Navegar a AddEntryFormPage con el LectorResponse
+          Get.to(() => AddEntryFormPage(lectorResponse: lectorResponse));
+        } else {
+          // Para parqueo (validación/salida), usar ApiParking.lectorParqueo()
+          final vehicleData = await _apiParking.lectorParqueo(
+            codigo: qrResult,
+            idLugar: placeId,
+            idPuerta: doorId ?? '1',
+            tipoIngreso: tipoIngreso,
+            idUsuarioAdmin: idUsuarioAdmin,
+          );
+
+          // Para otros casos (validación, salida), navegar a ValidateParkingPage
+          Get.to(() => ValidateParkingPage(
+                vehicleData: vehicleData,
+                mainParkingEntry: mainParkingEntry,
+              ));
+        }
       }
     } catch (e) {
-      print('Error al navegar al scanner QR: $e');
-      Get.snackbar(
-        'Error',
-        'No se pudo procesar la navegación',
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-      );
     } finally {
       isLoading.value = false;
     }
@@ -159,7 +168,7 @@ class TypeParkingRegisterController extends GetxController {
         codigo: code,
         idLugar: placeId,
         idPuerta: doorId ?? '1',
-        tipoIngreso: 'V', // Validación
+        tipoIngreso: mainParkingEntry == MainParkingEntry.validation ? 'V' : mainParkingEntry == MainParkingEntry.entry ? 'I' : 'S',
         idUsuarioAdmin: idUsuarioAdmin,
       );
 
@@ -169,17 +178,10 @@ class TypeParkingRegisterController extends GetxController {
       // Navegar a ValidateParkingPage
       Get.to(() => ValidateParkingPage(
         vehicleData: vehicleData,
-        mainParkingEntry: MainParkingEntry.validation,
+        mainParkingEntry: mainParkingEntry,
       ));
 
     } catch (e) {
-      print('Error al buscar por código: $e');
-      Get.snackbar(
-        'Error',
-        'No se pudo procesar el código',
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-      );
     } finally {
       isLoading.value = false;
     }
@@ -200,7 +202,7 @@ class TypeParkingRegisterController extends GetxController {
       case MainParkingEntry.exit:
       default:
         // Para validación y salida, navegar a lista de vehículos
-        Get.to(() => VehiclesListPage(doorId: doorId));
+        Get.to(() => VehiclesListPage(doorId: doorId, mainParkingEntry: mainParkingEntry));
         print('Navegando a lista de vehículos para validación/salida');
         break;
     }

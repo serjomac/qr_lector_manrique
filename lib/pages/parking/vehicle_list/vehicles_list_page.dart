@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:qr_scaner_manrique/BRACore/constants/constants-icons.dart';
+import 'package:qr_scaner_manrique/BRACore/enums/main_parking_entry.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/Texts/BRAText.dart';
 import 'package:qr_scaner_manrique/shared/loadings_pages/loading_invitations_page.dart';
@@ -10,13 +11,14 @@ import 'vehicles_list_controller.dart';
 
 class VehiclesListPage extends StatelessWidget {
   final String? doorId;
+  final MainParkingEntry mainParkingEntry;
   
-  const VehiclesListPage({Key? key, this.doorId}) : super(key: key);
+  const VehiclesListPage({Key? key, this.doorId, this.mainParkingEntry = MainParkingEntry.validation}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GetBuilder<VehiclesValidationListController>(
-      init: VehiclesValidationListController(doorId: doorId),
+      init: VehiclesValidationListController(doorId: doorId, mainParkingEntry: mainParkingEntry),
       builder: (controller) {
         return Scaffold(
           backgroundColor: Colors.white,
@@ -24,7 +26,7 @@ class VehiclesListPage extends StatelessWidget {
             child: Column(
               children: [
                 // Header with back button and title
-                _buildHeader(),
+                _buildHeader(controller),
                 // Date selection section
                 GetBuilder<VehiclesValidationListController>(
                   builder: (controller) => _buildDateSelectionSection(controller),
@@ -45,7 +47,7 @@ class VehiclesListPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(VehiclesValidationListController controller) {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -69,9 +71,9 @@ class VehiclesListPage extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           // Title
-          const Expanded(
+          Expanded(
             child: BRAText(
-              text: 'Vehículos',
+              text: controller.mainParkingEntry == MainParkingEntry.validation ? 'Vehículos para validar' : 'Vehículos pasa salir',
               size: 18,
               fontWeight: FontWeight.w600,
               color: Color(0xFF231918),
@@ -144,7 +146,7 @@ class VehiclesListPage extends StatelessWidget {
         controller: controller.placaController,
         onChanged: controller.searchByPlaca,
         decoration: InputDecoration(
-          hintText: 'Buscar por placa',
+          hintText: 'Buscar',
           hintStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 14,
@@ -185,7 +187,7 @@ class VehiclesListPage extends StatelessWidget {
           return Container(
             margin: const EdgeInsets.only(bottom: 15),
             child: _buildVehicleCard(entry, index, () {
-              controller.onVehicleCardTap(index);
+              controller.onVehicleCardTap(entry);
             }, controller),
           );
         },
@@ -227,7 +229,7 @@ class VehiclesListPage extends StatelessWidget {
                 left: 19,
                 top: 17,
                 child: BRAText(
-                  text: (entry.nombrePuerta?.toString() ?? 'Sin puerta').toUpperCase(),
+                  text: (entry.ingreso?.nombrePuertaIngreso ?? '').toUpperCase(),
                   size: 10,
                   fontWeight: FontWeight.w500,
                   color: const Color(0xFF5B5856),
@@ -344,7 +346,7 @@ class VehiclesListPage extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               BRAText(
-                text: entry.placa ?? 'Sin placa',
+                text: entry.placa?.toUpperCase() ?? '',
                 size: 20,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFFEB472A),
@@ -359,7 +361,7 @@ class VehiclesListPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: BRAText(
-                  text: entry.nombreLugar?.toString() ?? 'Sin lugar',
+                  text: entry.ingreso?.tipoIngreso ?? '',
                   size: 8,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF565656),
@@ -497,13 +499,13 @@ class VehiclesListPage extends StatelessWidget {
       case 'validado':
         return 0xFF036546; // Green
       case 'ingresado':
-        return 0xFFEB472A; // Red
+        return 0xFFB86E00; // Orange
       case 'retirado':
-        return 0xFF5B5856; // Gray
+        return 0xFFA10101; // Red
       case 'caducado':
-        return 0xFFC3C3C3; // Light gray
+        return 0xFF565656; // Gray
       default:
-        return 0xFFEB472A; // Default red
+        return 0xFFB86E00; // Default orange
     }
   }
 
@@ -513,13 +515,13 @@ class VehiclesListPage extends StatelessWidget {
       case 'validado':
         return 0xFFCFF9E6; // Light green
       case 'ingresado':
-        return 0xFFFFE5E0; // Light red
+        return 0xFFFEEFC8; // Light orange
       case 'retirado':
-        return 0xFFF2F2F2; // Light gray
+        return 0xFFFEC8C8; // Light red
       case 'caducado':
-        return 0xFFF8F8F8; // Very light gray
+        return 0xFFE5E8EC; // Light gray
       default:
-        return 0xFFFFE5E0; // Default light red
+        return 0xFFFEEFC8; // Default light orange
     }
   }
 

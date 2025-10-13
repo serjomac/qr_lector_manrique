@@ -72,21 +72,21 @@ class AppInterceptors extends Interceptor {
         }
       }
     } catch (e) {
-      print('ERRORRR DE INFO DEVICE');
-      print(e);
+      log('ERRORRR DE INFO DEVICE');
+      log(e.toString());
     }
     log('URL INFO DEVICE: ' + json.encode(infoData));
-    print('URL REQUEST: ' + options.baseUrl + options.path);
+    log('URL REQUEST: ' + options.baseUrl + options.path);
     if (options.contentType != 'multipart/form-data') {
-      print('BODY: ' + json.encode(options.data));
+      log('BODY: ' + json.encode(options.data));
     } else {
       if (options.data is FormData) {
         FormData formData = options.data;
         formData.fields.forEach((element) {
-          print('FIELD: ${element.key}: ${element.value}');
+          log('FIELD: ${element.key}: ${element.value}');
         });
         formData.files.forEach((element) {
-          print(
+          log(
               'FILE: ${element.key}: Filename: ${element.value.filename}, Content-Type: ${element.value.contentType}');
         });
       }

@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/Texts/BRAText.dart';
+import 'package:qr_scaner_manrique/BRAUXComponents/textField/custom_text_form_field.dart';
+import 'package:qr_scaner_manrique/shared/widgets/custom_text_field.dart';
 import 'manual_parking_register_controller.dart';
 
 class ManualParkingRegisterPage extends StatelessWidget {
@@ -19,17 +21,17 @@ class ManualParkingRegisterPage extends StatelessWidget {
               children: [
                 // Header with back button and title
                 _buildHeader(controller),
-                
+
                 // Form content
                 Expanded(
                   child: SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _buildFormContent(controller),
+                      child: _buildFormContent(controller, context),
                     ),
                   ),
                 ),
-                
+
                 // Validate button
                 _buildValidateButton(controller),
               ],
@@ -77,24 +79,32 @@ class ManualParkingRegisterPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFormContent(ManualParkingRegisterController controller) {
+  Widget _buildFormContent(
+    ManualParkingRegisterController controller,
+    BuildContext context,
+  ) {
     return Form(
       key: controller.formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 28),
-          
+
           // Photo upload section
           _buildPhotoUploadSection(controller),
-          
+
           const SizedBox(height: 20),
-          
+
           // Sección de imágenes adicionales
           _buildAdditionalImagesSection(controller),
-          
+
           const SizedBox(height: 20),
-          
+
+          // Cédula field with lookup functionality
+          _buildCedulaTextField(controller, Theme.of(context)),
+
+          const SizedBox(height: 20),
+
           // Nombre y Apellido field
           _buildTextField(
             label: 'Nombre y Apellido',
@@ -103,25 +113,16 @@ class ManualParkingRegisterPage extends StatelessWidget {
           ),
           
           const SizedBox(height: 20),
-          
-          // Cédula field
-          _buildTextField(
-            label: 'Cédula',
-            controller: controller.cedulaController,
-            isRequired: false,
-          ),
-          
-          const SizedBox(height: 20),
-          
+
           // Celular field
           _buildTextField(
             label: 'Celular',
             controller: controller.celularController,
             isRequired: false,
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Placa field (required)
           _buildTextField(
             label: 'Placa',
@@ -137,12 +138,12 @@ class ManualParkingRegisterPage extends StatelessWidget {
               return null;
             },
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Observación field
           _buildObservationField(controller),
-          
+
           const SizedBox(height: 40),
         ],
       ),
@@ -155,20 +156,20 @@ class ManualParkingRegisterPage extends StatelessWidget {
         // Foto cédula
         Expanded(
           child: Obx(() => _buildPhotoUploadCard(
-            label: 'Foto cédula',
-            onTap: controller.takeFotoCedula,
-            imageFile: controller.fotoCedulaFile.value,
-          )),
+                label: 'Foto cédula',
+                onTap: controller.takeFotoCedula,
+                imageFile: controller.fotoCedulaFile.value,
+              )),
         ),
         const SizedBox(width: 16),
-        
+
         // Foto placa
         Expanded(
           child: Obx(() => _buildPhotoUploadCard(
-            label: 'Foto Placa',
-            onTap: controller.takeFotoPlaca,
-            imageFile: controller.fotoPlacaFile.value,
-          )),
+                label: 'Foto Placa',
+                onTap: controller.takeFotoPlaca,
+                imageFile: controller.fotoPlacaFile.value,
+              )),
         ),
       ],
     );
@@ -184,7 +185,7 @@ class ManualParkingRegisterPage extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 85,
+        height: 95,
         decoration: BoxDecoration(
           border: Border.all(
             color: const Color(0xFFB4A9A6),
@@ -233,7 +234,7 @@ class ManualParkingRegisterPage extends StatelessWidget {
                     const SizedBox(height: 4),
                   ],
                   BRAText(
-                    text: isAddMore && additionalImagesCount > 0 
+                    text: isAddMore && additionalImagesCount > 0
                         ? '$label ($additionalImagesCount)'
                         : label,
                     size: 14,
@@ -244,7 +245,7 @@ class ManualParkingRegisterPage extends StatelessWidget {
                   if (isAddMore) ...[
                     const SizedBox(height: 4),
                     Icon(
-                      additionalImagesCount > 0 
+                      additionalImagesCount > 0
                           ? Icons.add_photo_alternate_outlined
                           : Icons.camera_alt_outlined,
                       size: 18,
@@ -268,62 +269,33 @@ class ManualParkingRegisterPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label con indicador de obligatorio
-        Row(
-          children: [
-            BRAText(
-              text: label,
-              size: 14,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF231918),
-            ),
-            if (isRequired) ...[
-              const SizedBox(width: 4),
-              const BRAText(
-                text: '*',
-                size: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.red,
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 8),
         // Text field
-        Container(
-          height: 45,
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: errorText != null 
-                  ? Colors.red
-                  : isRequired 
-                      ? const Color(0xFFEB472A).withOpacity(0.6)
-                      : const Color(0xFF85736F),
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(8),
+        TextFormField(
+          controller: controller,
+          validator: validator,
+          decoration: CustomTextFormField.decorationFormCard(
+            labelText: (isRequired ? '$label (requerido)*' : '$label (opcional)'),
+            theme: Theme.of(Get.context!),
+            focusNode: FocusNode(),
+            isFLoatingLabelVisible: true,
           ),
-          child: TextFormField(
-            controller: controller,
-            validator: validator,
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 12,
-              ),
-              hintText: hint ?? (isRequired ? '$label (requerido)' : '$label (opcional)'),
-              hintStyle: TextStyle(
-                color: const Color(0xFF998E8C).withOpacity(0.7),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            style: const TextStyle(
-              color: Color(0xFF534340),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
+          // Decoration(
+          //   border: InputBorder.none,
+          //   contentPadding: const EdgeInsets.symmetric(
+          //     horizontal: 10,
+          //     vertical: 12,
+          //   ),
+          //   hintText: hint ?? (isRequired ? '$label (requerido)' : '$label (opcional)'),
+          //   hintStyle: TextStyle(
+          //     color: const Color(0xFF998E8C).withOpacity(0.7),
+          //     fontSize: 14,
+          //     fontWeight: FontWeight.w400,
+          //   ),
+          // ),
+          style: const TextStyle(
+            color: Color(0xFF534340),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
           ),
         ),
         // Error message
@@ -336,6 +308,57 @@ class ManualParkingRegisterPage extends StatelessWidget {
             color: Colors.red,
           ),
         ],
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _buildCedulaTextField(
+    ManualParkingRegisterController controller,
+    ThemeData theme,
+    ) {
+        // Crear FocusNode para detectar pérdida de foco
+    final FocusNode cedulaFocusNode = controller.cedulaFocusNode;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Text field with loading indicator
+        Obx(() => TextFormField(
+          controller: controller.cedulaController,
+          focusNode: cedulaFocusNode,
+          onFieldSubmitted: (value) {
+            // También llamar cuando se presiona enter
+            controller.lookupPersonByCedula(value);
+          },
+          decoration: CustomTextFormField.decorationFormCard(
+            labelText: 'Cédula (opcional)',
+            theme: theme,
+            focusNode: cedulaFocusNode,
+            isFLoatingLabelVisible: true,
+            suxffixIcon: controller.isCedulaLoading.value
+                ? InkWell(
+                    onTap: () {}, // InkWell vacío para satisfacer el tipo
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+                        ),
+                      ),
+                    ),
+                  )
+                : null,
+          ),
+          style: const TextStyle(
+            color: Color(0xFF534340),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
+        )),
         const SizedBox(height: 12),
       ],
     );
@@ -397,34 +420,36 @@ class ManualParkingRegisterPage extends StatelessWidget {
       width: double.infinity,
       height: 46,
       child: Obx(() => ElevatedButton(
-        onPressed: controller.isLoading.value ? null : controller.validateForm,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFEB472A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          elevation: 0,
-        ),
-        child: controller.isLoading.value
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : const BRAText(
-                text: 'Validar',
-                size: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+            onPressed:
+                controller.isLoading.value ? null : controller.validateForm,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEB472A),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
               ),
-      )),
+              elevation: 0,
+            ),
+            child: controller.isLoading.value
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const BRAText(
+                    text: 'Guardar',
+                    size: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+          )),
     );
   }
 
-  Widget _buildAdditionalImagesSection(ManualParkingRegisterController controller) {
+  Widget _buildAdditionalImagesSection(
+      ManualParkingRegisterController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -438,23 +463,26 @@ class ManualParkingRegisterPage extends StatelessWidget {
         SizedBox(
           height: 90,
           child: Obx(() => SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                // Botón para agregar nueva imagen
-                _buildAddImageButton(controller),
-                // Imágenes existentes con botón de eliminar
-                ...controller.imagenesAdicionalesFiles.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final imageFile = entry.value;
-                  return _buildImagePreview(
-                    imageFile,
-                    () => controller.removeImage(index),
-                  );
-                }).toList(),
-              ],
-            ),
-          )),
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    // Botón para agregar nueva imagen
+                    _buildAddImageButton(controller),
+                    // Imágenes existentes con botón de eliminar
+                    ...controller.imagenesAdicionalesFiles
+                        .asMap()
+                        .entries
+                        .map((entry) {
+                      final index = entry.key;
+                      final imageFile = entry.value;
+                      return _buildImagePreview(
+                        imageFile,
+                        () => controller.removeImage(index),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              )),
         ),
       ],
     );

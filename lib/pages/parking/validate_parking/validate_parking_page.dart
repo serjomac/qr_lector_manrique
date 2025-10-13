@@ -4,15 +4,15 @@ import 'package:qr_scaner_manrique/BRACore/enums/main_parking_entry.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/Texts/BRAText.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/buttons/BRAButton.dart';
+import 'package:qr_scaner_manrique/BRAUXComponents/textField/custom_text_form_field.dart';
 import 'package:qr_scaner_manrique/pages/parking/validate_parking/validate_parking_controller.dart';
-import 'package:qr_scaner_manrique/shared/widgets/custom_text_field.dart';
 
 class ValidateParkingPage extends StatelessWidget {
   final ParrkingResponse vehicleData;
   final MainParkingEntry mainParkingEntry;
-  
+
   const ValidateParkingPage({
-    Key? key, 
+    Key? key,
     required this.vehicleData,
     required this.mainParkingEntry,
   }) : super(key: key);
@@ -28,36 +28,49 @@ class ValidateParkingPage extends StatelessWidget {
         ),
         builder: (controller) {
           return SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Header con botón de regreso
-                  _buildHeader(context, controller),
-                  
-                  // Tab Bar
-                  _buildTabBar(context, controller),
-                  
-                  // Content específico según el tab
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              children: [
+                // Header fijo en la parte superior
+                _buildHeader(context, controller),
+                
+                // Tab Bar fijo debajo del header
+                _buildTabBar(context, controller),
+                
+                // Content scrollable
+                Expanded(
+                  child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        const SizedBox(height: 20),
-                        
-                        // Placa del vehículo (común para todos los tabs)
-                        _buildPlacaWidget(controller),
-                        
-                        const SizedBox(height: 20),
-                        
-                        // Contenido específico del tab
-                        _buildTabContent(controller),
-                        
-                        const SizedBox(height: 40), // Espacio extra al final
+                        // Content específico según el tab
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 20),
+
+                              // Placa del vehículo (común para todos los tabs)
+                              _buildPlacaWidget(controller),
+
+                              // Mensaje de alerta con observación (solo si existe)
+                              _buildObservationAlert(controller),
+
+                              const SizedBox(height: 20),
+
+                              // Contenido específico del tab
+                              _buildTabContent(controller, context),
+
+                              const SizedBox(height: 40), // Espacio extra al final
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                
+                // Botón fijo en la parte inferior (solo para ciertos tabs)
+                _buildBottomButton(controller),
+              ],
             ),
           );
         },
@@ -65,9 +78,9 @@ class ValidateParkingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, ValidateParkingController controller) {
-    final titles = ["Ingreso", "Validación", "Salida"];
-    
+  Widget _buildHeader(
+      BuildContext context, ValidateParkingController controller) {
+
     return Container(
       height: 47,
       padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -91,7 +104,7 @@ class ValidateParkingPage extends StatelessWidget {
           Expanded(
             child: Center(
               child: BRAText(
-                text: titles[controller.selectedTabIndex],
+                text: controller.getCurrentTabTitle(),
                 size: 16,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF231918),
@@ -104,7 +117,8 @@ class ValidateParkingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTabBar(BuildContext context, ValidateParkingController controller) {
+  Widget _buildTabBar(
+      BuildContext context, ValidateParkingController controller) {
     return Center(
       child: Container(
         margin: const EdgeInsets.only(top: 10),
@@ -144,7 +158,8 @@ class ValidateParkingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTab(String title, int index, ValidateParkingController controller) {
+  Widget _buildTab(
+      String title, int index, ValidateParkingController controller) {
     final isSelected = controller.selectedTabIndex == index;
     return Expanded(
       child: GestureDetector(
@@ -205,42 +220,176 @@ class ValidateParkingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoSection(ValidateParkingController controller) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildObservationAlert(ValidateParkingController controller) {
+    // Solo mostrar la alerta si hay observación de ingreso
+    if (controller.vehicleData.observacion == null ||
+        controller.vehicleData.observacion!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
       children: [
-        // Columna izquierda
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3CD),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFFD60A), width: 1),
+          ),
+          child: Row(
             children: [
-              _buildInfoItem("Nombre:", controller.nameController.text),
-              const SizedBox(height: 17),
-              _buildInfoItem("Celular", controller.celularController.text),
-              const SizedBox(height: 17),
-              _buildInfoItem("Observación:", controller.observacionController.text),
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFB45309),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const BRAText(
+                      text: "Observación de ingreso:",
+                      size: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFB45309),
+                    ),
+                    const SizedBox(height: 4),
+                    BRAText(
+                      text: controller.vehicleData.observacion!,
+                      size: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFFB45309),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-        const SizedBox(width: 20),
-        // Columna derecha
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildInfoItem("Cédula:", controller.cedulaController.text),
-              const SizedBox(height: 17),
-              _buildInfoItem("Fecha:", controller.fechaController.text, isSecondary: true),
-              const SizedBox(height: 17),
-              _buildInfoItem("Puerta", controller.puertaController.text, isSecondary: true),
-            ],
-          ),
-        ),
+        const SizedBox(height: 8),
       ],
     );
   }
 
-  Widget _buildInfoItem(String label, String value, {bool isSecondary = false}) {
+  Widget _buildInfoSection(ValidateParkingController controller) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Nombre
+          controller.nameController.text.isNotEmpty ? Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Nombre:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              Expanded(
+                child: BRAText(
+                  text: controller.nameController.text,
+                  size: 14,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF333333),
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
+          ) : Container(),
+          const SizedBox(height: 12),
+          // Cédula
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Cédula:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.cedulaController.text,
+                size: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF333333),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Celular
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Celular:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.celularController.text,
+                size: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF333333),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(color: Color(0xFFE0E0E0)),
+          const SizedBox(height: 12),
+          // Fecha
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Fecha:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.fechaController.text,
+                size: 14,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF5B5856),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Puerta
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Puerta:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.puertaController.text,
+                size: 14,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF5B5856),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(String label, String value,
+      {bool isSecondary = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -255,7 +404,8 @@ class ValidateParkingPage extends StatelessWidget {
           text: value,
           size: 16,
           fontWeight: FontWeight.w400,
-          color: isSecondary ? const Color(0xFF5B5856) : const Color(0xFF202023),
+          color:
+              isSecondary ? const Color(0xFF5B5856) : const Color(0xFF202023),
         ),
       ],
     );
@@ -265,7 +415,7 @@ class ValidateParkingPage extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 402,
+          height: controller.imageUrls.isNotEmpty ? 402 : 0,
           child: GridView.builder(
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -274,15 +424,15 @@ class ValidateParkingPage extends StatelessWidget {
               mainAxisSpacing: 10,
               childAspectRatio: 1.0,
             ),
-            itemCount: 4,
+            itemCount: controller.imageUrls.length,
             itemBuilder: (context, index) {
               return _buildImageCard(index, controller);
             },
           ),
         ),
-        
+
         // Texto informativo para modo validación
-        if (controller.isImageGridReadOnly) ...[
+        if (controller.isImageGridReadOnly && controller.imageUrls.isNotEmpty) ...[
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -300,9 +450,9 @@ class ValidateParkingPage extends StatelessWidget {
                   size: 16,
                 ),
                 const SizedBox(width: 6),
-                const Expanded(
+                Expanded(
                   child: BRAText(
-                    text: "Imágenes de ingreso (solo visualización)",
+                    text: controller.imageUrls.isNotEmpty ? "Imágenes de ingreso (solo visualización)" : '',
                     size: 12,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF036546),
@@ -319,18 +469,20 @@ class ValidateParkingPage extends StatelessWidget {
   Widget _buildImageCard(int index, ValidateParkingController controller) {
     final hasImage = controller.imageUrls[index].isNotEmpty;
     final isReadOnly = controller.isImageGridReadOnly;
-    
+
     return GestureDetector(
-      onTap: isReadOnly ? null : () {
-        // Aquí puedes agregar lógica para agregar/cambiar imagen
-        // Solo si no está en modo de solo lectura
-      },
+      onTap: isReadOnly
+          ? null
+          : () {
+              // Aquí puedes agregar lógica para agregar/cambiar imagen
+              // Solo si no está en modo de solo lectura
+            },
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFD9D9D9),
           borderRadius: BorderRadius.circular(10),
           // Agregar borde visual para indicar modo de solo lectura
-          border: isReadOnly && hasImage 
+          border: isReadOnly && hasImage
               ? Border.all(color: const Color(0xFF036546), width: 2)
               : null,
         ),
@@ -351,7 +503,7 @@ class ValidateParkingPage extends StatelessWidget {
               )
             else
               _buildImagePlaceholder(),
-            
+
             // Indicador de solo lectura
             if (isReadOnly && hasImage)
               Positioned(
@@ -376,12 +528,14 @@ class ValidateParkingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTabContent(ValidateParkingController controller) {
+  Widget _buildTabContent(ValidateParkingController controller, BuildContext context) {
     switch (controller.selectedTabIndex) {
       case 0: // Ingreso
         return _buildIngresoContent(controller);
       case 1: // Validación
-        return _buildValidacionContent(controller);
+        return controller.mainParkingEntry == MainParkingEntry.exit
+            ? _buildExitContent(controller)
+            : _buildValidacionContent(context);
       case 2: // Salida
         return _buildSalidaContent(controller);
       default:
@@ -392,51 +546,44 @@ class ValidateParkingPage extends StatelessWidget {
   Widget _buildIngresoContent(ValidateParkingController controller) {
     return Column(
       children: [
+        
         // Información del registro
         _buildInfoSection(controller),
-        
+
         const SizedBox(height: 20),
-        
+
         // Grid de imágenes
         _buildImageGrid(controller),
       ],
     );
   }
 
-  Widget _buildValidacionContent(ValidateParkingController controller) {
+  Widget _buildExitContent(ValidateParkingController controller) {
+    // Diseño original para modo validación normal
     return Column(
       children: [
         // Información de validación en dos columnas
         _buildValidacionInfoSection(controller),
-        
+
         const SizedBox(height: 20),
-        
-        // Imagen de añadir
-        _buildValidacionImageSection(controller),
-        
-        const SizedBox(height: 20),
-        
-        // Campo de observación
-        _buildObservacionField(controller),
-        
-        const SizedBox(height: 20),
-        
-        // Botón Guardar
-        _buildGuardarButton(controller),
-        
-        const SizedBox(height: 20),
-        
-        // Estado del ticket
-        _buildTicketStatus(controller),
+
+        // Grid de imágenes (solo lectura)
+        _buildImageGrid(controller),
       ],
     );
   }
 
   Widget _buildSalidaContent(ValidateParkingController controller) {
+    // Si venimos de exit, mostrar diseño específico para salida
+    if (controller.mainParkingEntry == MainParkingEntry.exit) {
+      return _buildExitSalidaContent();
+    }
+
+    // Diseño original para sin registro de salida
     return Column(
       children: [
         const SizedBox(height: 20),
-        
+
         // Mensaje de sin registro de salida
         _buildNoExitMessage(),
       ],
@@ -444,39 +591,136 @@ class ValidateParkingPage extends StatelessWidget {
   }
 
   Widget _buildValidacionInfoSection(ValidateParkingController controller) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Columna izquierda
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Fecha
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildInfoItem("Fecha:", controller.fechaValidacionController.text, isSecondary: true),
-              const SizedBox(height: 17),
-              _buildInfoItem("Tiempo total", controller.tiempoTotalController.text),
-              const SizedBox(height: 17),
-              _buildTarifaItem("Tarifa", controller.tarifaController.text),
-              const SizedBox(height: 17),
+              BRAText(
+                text: 'Fecha:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.fechaValidacionController.text,
+                size: 14,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF5B5856),
+              ),
             ],
           ),
-        ),
-        const SizedBox(width: 20),
-        // Columna derecha
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 12),
+          // Puerta
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildInfoItem("Puerta", controller.puertaController.text, isSecondary: true),
-              const SizedBox(height: 17),
-              _buildInfoItem("Tiempo pago:", controller.tiempoPagoController.text),
-              const SizedBox(height: 17),
-              _buildTarifaItem("Total", controller.totalController.text),
-              const SizedBox(height: 17),
+              BRAText(
+                text: 'Puerta:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.puertaController.text,
+                size: 14,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF5B5856),
+              ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          // Tiempo total
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Tiempo total:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.tiempoTotalController.text,
+                size: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF333333),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Tiempo pago
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Tiempo pago:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.tiempoPagoController.text,
+                size: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF333333),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(color: Color(0xFFE0E0E0)),
+          const SizedBox(height: 12),
+          // Tarifa
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Tarifa:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              Row(
+                children: [
+                  BRAText(
+                    text: '\$${controller.tarifaController.text}',
+                    size: 14,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF5B5856),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Total
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Total:',
+                size: 16,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: '\$${controller.totalController.text}',
+                size: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -491,32 +735,11 @@ class ValidateParkingPage extends StatelessWidget {
           color: const Color(0xFF202023),
         ),
         const SizedBox(height: 6),
-        Row(
-          children: [
-            BRAText(
-              text: value,
-              size: 16,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF5B5856),
-            ),
-            const SizedBox(width: 5),
-            Container(
-              width: 15,
-              height: 15,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEB472A),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: BRAText(
-                  text: "\$",
-                  size: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+        BRAText(
+          text: '\$${value}',
+          size: 16,
+          fontWeight: FontWeight.w400,
+          color: const Color(0xFF5B5856),
         ),
       ],
     );
@@ -557,7 +780,7 @@ class ValidateParkingPage extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // Lista horizontal de imágenes si hay alguna
         if (controller.validacionImages.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -655,10 +878,29 @@ class ValidateParkingPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        CustomTextField(
-          onChanged: (value) {
-          },
-          value: controller.observacionValidacionController.text,
+        Container(
+          height: 62,
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFF85736F)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: TextFormField(
+            controller: controller.observacionValidacionController,
+            maxLines: null,
+            expands: true,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 16,
+              ),
+            ),
+            style: const TextStyle(
+              color: Color(0xFF534340),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
         ),
       ],
     );
@@ -666,8 +908,16 @@ class ValidateParkingPage extends StatelessWidget {
 
   Widget _buildGuardarButton(ValidateParkingController controller) {
     return Obx(() {
+      // Determinar el texto del botón según el modo
+      String buttonText;
+      if (controller.mainParkingEntry == MainParkingEntry.exit) {
+        buttonText = controller.isValidating.value ? 'Guardando...' : 'Guardar';
+      } else {
+        buttonText = controller.isValidating.value ? 'Validando...' : 'Validar';
+      }
+
       return BRAButton(
-        label: controller.isValidating.value ? 'Validando...' : 'Guardar',
+        label: buttonText,
         onPressed: () {
           if (!controller.isValidating.value) {
             controller.onValidarPressed();
@@ -677,16 +927,49 @@ class ValidateParkingPage extends StatelessWidget {
     });
   }
 
+  Widget _buildBottomButton(ValidateParkingController controller) {
+    // Determinar si mostrar botón según el tab y modo
+    bool shouldShowButton = false;
+    
+    // Mostrar botón en el tab de Validación (index 1) o Salida (index 2) según el modo
+    if (controller.selectedTabIndex == 1) {
+      // Tab Validación: mostrar botón solo si NO venimos de exit mode
+      shouldShowButton = controller.mainParkingEntry != MainParkingEntry.exit;
+    } else if (controller.selectedTabIndex == 2) {
+      // Tab Salida: mostrar botón solo si venimos de exit mode
+      shouldShowButton = controller.mainParkingEntry == MainParkingEntry.exit;
+    }
+
+    if (!shouldShowButton) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -10),
+          ),
+        ],
+      ),
+      child: _buildGuardarButton(controller),
+    );
+  }
+
   Widget _buildTicketStatus(ValidateParkingController controller) {
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: controller.isTicketExpired 
-            ? const Color(0xFFE5E8EC) 
+        color: controller.isTicketExpired
+            ? const Color(0xFFE5E8EC)
             : const Color(0xFFCFF9E6),
         border: Border.all(
-          color: controller.isTicketExpired 
-              ? const Color(0xFF565656) 
+          color: controller.isTicketExpired
+              ? const Color(0xFF565656)
               : const Color(0xFF036546),
         ),
         borderRadius: BorderRadius.circular(10),
@@ -698,16 +981,16 @@ class ValidateParkingPage extends StatelessWidget {
             text: controller.isTicketExpired ? "CADUCADO" : "VALIDADO",
             size: 20,
             fontWeight: FontWeight.w400,
-            color: controller.isTicketExpired 
-                ? const Color(0xFF565656) 
+            color: controller.isTicketExpired
+                ? const Color(0xFF565656)
                 : const Color(0xFF036546),
           ),
           const SizedBox(width: 10),
           Icon(
             controller.isTicketExpired ? Icons.error : Icons.check_circle,
             size: 30,
-            color: controller.isTicketExpired 
-                ? const Color(0xFF565656) 
+            color: controller.isTicketExpired
+                ? const Color(0xFF565656)
                 : const Color(0xFF036546),
           ),
         ],
@@ -742,7 +1025,8 @@ class ValidateParkingPage extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: BRAText(
-              text: "Parece que no hay un registro de salida para este vehículo",
+              text:
+                  "Parece que no hay un registro de salida para este vehículo",
               size: 16,
               fontWeight: FontWeight.w400,
               color: Color(0xFF5B5856),
@@ -768,5 +1052,407 @@ class ValidateParkingPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Método para el contenido de validación cuando venimos de exit
+  Widget _buildValidacionContent(BuildContext context) {
+    final controller = Get.find<ValidateParkingController>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Info section
+        _buildValidationInfoSection(controller),
+    
+        const SizedBox(height: 24),
+    
+        // Time and rate section
+        _buildTimeAndRateSection(controller),
+    
+        const SizedBox(height: 32),
+        _buildValidationImageSection(controller),
+    
+        const SizedBox(height: 32),
+        // Observation field
+        _buildExitObservationField(controller, context),
+      ],
+    );
+  }
+
+  Widget _buildTimeAndRateSection(ValidateParkingController controller) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Tiempo total:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.vehicleData.ingreso?.tiempoTotal ?? '',
+                size: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF333333),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Tiempo de pago:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: controller.vehicleData.ingreso?.tiempoHorasPago ?? '',
+                size: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF333333),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Tarifa:',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: '\$${controller.vehicleData.ingreso?.tarifaAplicada}',
+                size: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF333333),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(color: Color(0xFFE0E0E0)),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              BRAText(
+                text: 'Total a pagar:',
+                size: 16,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF333333),
+              ),
+              BRAText(
+                text: '\$${controller.vehicleData.ingreso?.valorTotal ?? ''}', // This would come from the controller
+                size: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Método para el contenido de salida cuando venimos de exit
+  Widget _buildExitSalidaContent() {
+    final controller = Get.find<ValidateParkingController>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const SizedBox(height: 20),
+
+        // Info section (Fecha y Puerta)
+        _buildExitRegistroInfoSection(controller),
+
+        const SizedBox(height: 20),
+
+        // Image upload section
+        _buildExitImageUploadSection(controller),
+      ],
+    );
+  }
+
+  // Información básica para salida (fecha y puerta)
+  Widget _buildValidationInfoSection(ValidateParkingController controller) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Columna izquierda - Fecha
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoItem("Fecha:", controller.fechaController.text,
+                  isSecondary: true),
+            ],
+          ),
+        ),
+        const SizedBox(width: 45),
+        // Columna derecha - Puerta
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoItem("Puerta", controller.puertaController.text,
+                  isSecondary: true),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Sección de imagen para salida (una sola imagen)
+  Widget _buildValidationImageSection(ValidateParkingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Lista horizontal que incluye el botón de agregar como primer elemento
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: controller.validacionImages.length +
+                1, // +1 para el botón de agregar
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                // Primer elemento: botón para agregar imagen
+                return Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  child: GestureDetector(
+                    onTap: () {
+                      controller.takeValidacionPhoto();
+                    },
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFC3C3C3)),
+                      ),
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 22,
+                            color: Color(0xFFC3C3C3),
+                          ),
+                          SizedBox(height: 8),
+                          BRAText(
+                            text: "Añadir imágenes",
+                            size: 10,
+                            color: Color(0xFFC3C3C3),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                // Elementos siguientes: imágenes agregadas
+                final imageIndex = index - 1;
+                return Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  child: _buildImageItem(controller, imageIndex),
+                );
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Información para registro de salida (Fecha y Puerta)
+  Widget _buildExitRegistroInfoSection(ValidateParkingController controller) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Columna izquierda - Fecha
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BRAText(
+                text: "Fecha:",
+                size: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF202023),
+              ),
+              const SizedBox(height: 6),
+              BRAText(
+                text: controller.fechaController.text.isNotEmpty
+                    ? controller.fechaController.text
+                    : "20 jul. 2025 10:40",
+                size: 16,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF5B5856),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 45),
+        // Columna derecha - Puerta
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BRAText(
+                text: "Puerta",
+                size: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF202023),
+              ),
+              const SizedBox(height: 6),
+              BRAText(
+                text: controller.puertaController.text.isNotEmpty
+                    ? controller.puertaController.text
+                    : "Puerta Z",
+                size: 16,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF5B5856),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Sección de imagen para registro de salida
+  Widget _buildExitImageUploadSection(ValidateParkingController controller) {
+    return Column(
+      children: [
+        // Imagen de carga única (177x164px como en Figma)
+        GestureDetector(
+          onTap: () {
+            controller.takeValidacionPhoto();
+          },
+          child: Container(
+            width: 177,
+            height: 164,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFC3C3C3)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  child: const Icon(
+                    Icons.add_photo_alternate_outlined,
+                    size: 22,
+                    color: Color(0xFFC3C3C3),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const BRAText(
+                  text: "Añadir imagenes",
+                  size: 10,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFFC3C3C3),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Lista horizontal de imágenes si hay alguna
+        if (controller.validacionImages.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          const BRAText(
+            text: "Imágenes agregadas:",
+            size: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF231918),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: controller.validacionImages.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  child: _buildImageItem(controller, index),
+                );
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // Campo de observación para registro de salida
+  Widget _buildExitObservationField(
+      ValidateParkingController controller, BuildContext context) {
+    return SizedBox(
+      height: 50,
+      child: TextFormField(
+        controller: controller.observacionValidacionController,
+        maxLines: null,
+        expands: true,
+        decoration: CustomTextFormField.decorationFormCard(
+            labelText: 'Observación',
+            isFLoatingLabelVisible: true,
+            theme: Theme.of(context),
+            focusNode: FocusNode()),
+      ),
+    );
+  }
+
+  // Botón guardar para registro de salida
+  Widget _buildExitSaveButton(ValidateParkingController controller) {
+    return Obx(() {
+      return Container(
+        width: 206,
+        height: 46,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEB472A),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(30),
+            onTap: controller.isValidating.value
+                ? null
+                : () {
+                    controller.onValidarPressed();
+                  },
+            child: Center(
+              child: BRAText(
+                text:
+                    controller.isValidating.value ? 'Guardando...' : 'Guardar',
+                size: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      );
+    });
   }
 }

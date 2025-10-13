@@ -38,7 +38,7 @@ class ParkingHomeController extends GetxController {
   fetchParkingEntrances({required String placeId}) async {
     try {
       entrancesLoading.value = true;
-      final allEntrances = await apiManager.fetchEntrances(placeId);
+      final allEntrances = await apiManager.fetchEntrances(placeId, 'P');
       
       // Mostrar todas las puertas disponibles
       parkingEntrances = allEntrances;
@@ -106,10 +106,14 @@ class ParkingHomeController extends GetxController {
       return;
     }
     
-    exitFormLoading.value = true;
-    // TODO: Implementar navegación a página de salida
-    print('Navegando a salida de parqueo con puerta: ${entranceIdSelected?.nombre}');
-    exitFormLoading.value = false;
+    // Mostrar el modal de tipo de registro para salida
+    Get.dialog(
+      TypeParkingRegisterModal(
+        doorId: entranceIdSelected?.idPuerta?.toString(),
+        mainParkingEntry: MainParkingEntry.exit,
+      ),
+      barrierDismissible: true,
+    );
   }
 
   // Navegación a historial
