@@ -248,22 +248,14 @@ class PropertiesController extends GetxController with WidgetsBindingObserver {
       return;
     }
     UserData.sharedInstance.placeSelected = placeTemp;
-    if (isFirstPlaceOnly) {
-      Get.offAll(HomePage(
-        isHiddenBackButton: true,
+    Get.bottomSheet(
+      PropertyActionsModal(
+        place: placeTemp,
         showNewVersionButton: showNewVersionButton,
-        propertyEntryType: PropertyEntryType.residentGate,
-      ));
-    } else {
-      Get.bottomSheet(
-        PropertyActionsModal(
-          place: placeTemp,
-          showNewVersionButton: showNewVersionButton,
-        ),
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-      );
-    }
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
     // fetchPermisos(placeTemp.idLugar.toString(), indexPropertie);
   }
 

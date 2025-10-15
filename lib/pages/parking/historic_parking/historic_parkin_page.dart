@@ -24,6 +24,8 @@ class HistoricParkinPage extends StatelessWidget {
                 _buildDateRangeFilter(controller),
                 // Search and type filters
                 _buildFilters(controller),
+                // Status chips filter
+                _buildStatusChipsFilter(controller),
                 // Vehicle records list
                 Expanded(
                   child: _buildVehicleRecordsList(controller),
@@ -77,8 +79,8 @@ class HistoricParkinPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       height: 40,
-      child: GestureDetector(
-        onTap: controller.isLoading ? null : controller.onDateRangePressed,
+      child: Obx(() => GestureDetector(
+        onTap: controller.isLoading.value ? null : controller.onDateRangePressed,
         child: Container(
           decoration: BoxDecoration(
             color: controller.lasDaysSelected != null
@@ -96,7 +98,7 @@ class HistoricParkinPage extends StatelessWidget {
               // Date range text
               Expanded(
                 child: BRAText(
-                  text: controller.isLoading 
+                  text: controller.isLoading.value 
                       ? 'Cargando...'
                       : (controller.lasDaysSelected != null
                           ? controller.lasDaysSelected!.title
@@ -107,7 +109,7 @@ class HistoricParkinPage extends StatelessWidget {
                 ),
               ),
               // Dropdown arrow or loading indicator
-              controller.isLoading
+              controller.isLoading.value
                   ? SizedBox(
                       width: 16,
                       height: 16,
@@ -124,7 +126,7 @@ class HistoricParkinPage extends StatelessWidget {
             ],
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -139,9 +141,9 @@ class HistoricParkinPage extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           // Type dropdown
-          Expanded(
-            child: _buildTypeDropdown(controller),
-          ),
+          // Expanded(
+          //   child: _buildTypeDropdown(controller),
+          // ),
         ],
       ),
     );
@@ -179,7 +181,6 @@ class HistoricParkinPage extends StatelessWidget {
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  hintText: 'GDF 4566',
                   hintStyle: TextStyle(
                     color: Color(0xFF5B5856),
                     fontSize: 15,
@@ -265,43 +266,201 @@ class HistoricParkinPage extends StatelessWidget {
     );
   }
 
-  Widget _buildVehicleRecordsList(HistoricParkinController controller) {
-    if (controller.isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEB472A)),
-            ),
-            SizedBox(height: 16),
-            BRAText(
-              text: 'Cargando registros...',
-              size: 14,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF5B5856),
-            ),
-          ],
-        ),
-      );
-    }
-
+  Widget _buildStatusChipsFilter(HistoricParkinController controller) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: ListView.separated(
-        itemCount: controller.vehicleRecords.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final record = controller.vehicleRecords[index];
-          return _buildVehicleCard(record);
-        },
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label
+          BRAText(
+            text: 'Filtrar por estado',
+            size: 12,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF5B5856),
+          ),
+          const SizedBox(height: 8),
+          // Chips list
+          SizedBox(
+            height: 40,
+            child: GetBuilder<HistoricParkinController>(
+              builder: (controller) {
+                final statusCounts = controller.getStatusCounts();
+                return ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    // "Todos" chip
+                    _buildStatusChip(
+                      label: 'Todos',
+                      count: controller.allVehicleRecords.length,
+                      isSelected: controller.selectedStatusFilter == null,
+                      onTap: () => controller.onStatusFilterTap(null),
+                      backgroundColor: Colors.grey[100]!,
+                      textColor: const Color(0xFF5B5856),
+                      borderColor: Colors.grey[300]!,
+                    ),
+                    const SizedBox(width: 8),
+                    // Status chips
+                    ...VehicleStatus.values.map((status) {
+                      final count = statusCounts[status] ?? 0;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _buildStatusChip(
+                          label: status.label,
+                          count: count,
+                          isSelected: controller.selectedStatusFilter == status,
+                          onTap: () => controller.onStatusFilterTap(status),
+                          backgroundColor: status.backgroundColor,
+                          textColor: status.textColor,
+                          borderColor: status.borderColor,
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  Widget _buildStatusChip({
+    required String label,
+    required int count,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required Color backgroundColor,
+    required Color textColor,
+    required Color borderColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? backgroundColor : backgroundColor.withOpacity(0.3),
+          border: Border.all(
+            color: isSelected ? borderColor : borderColor.withOpacity(0.5),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            BRAText(
+              text: label,
+              size: 12,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected ? textColor : textColor.withOpacity(0.8),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected ? textColor.withOpacity(0.2) : textColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: BRAText(
+                text: count.toString(),
+                size: 10,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? textColor : textColor.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVehicleRecordsList(HistoricParkinController controller) {
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEB472A)),
+              ),
+              SizedBox(height: 16),
+              BRAText(
+                text: 'Cargando registros...',
+                size: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF5B5856),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: RefreshIndicator(
+          color: Theme.of(Get.context!).primaryColor,
+          backgroundColor: Colors.white,
+          onRefresh: () async {
+            await controller.fetchVehicleRecords(clearFilters: true);
+          },
+          child: controller.vehicleRecords.isEmpty
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    Container(
+                      height: MediaQuery.of(Get.context!).size.height * 0.5,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.directions_car_outlined,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            BRAText(
+                              text: 'No hay registros',
+                              size: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[600]!,
+                            ),
+                            const SizedBox(height: 8),
+                            BRAText(
+                              text: 'Desliza hacia abajo para actualizar',
+                              size: 14,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.grey[500]!,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: controller.vehicleRecords.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final record = controller.vehicleRecords[index];
+                    return GestureDetector(
+                      onTap: () => controller.onVehicleRecordTap(record),
+                      child: _buildVehicleCard(record),
+                    );
+                  },
+                ),
+        ),
+      );
+    });
+  }
+
   Widget _buildVehicleCard(VehicleRecord record) {
     return Container(
-      height: 130,
+      height: 150,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -363,16 +522,16 @@ class HistoricParkinPage extends StatelessWidget {
             // Bottom row: Vehicle info and time info
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Vehicle info section
-                Flexible(
-                  flex: 3,
+                SizedBox(
+                  width: 140,
                   child: _buildVehicleInfoSection(record),
                 ),
                 const SizedBox(width: 10),
                 // Time info section
                 Flexible(
-                  flex: 2,
                   child: _buildTimeInfoSection(record),
                 ),
               ],
@@ -467,84 +626,56 @@ class HistoricParkinPage extends StatelessWidget {
 
   Widget _buildTimeInfoSection(VehicleRecord record) {
     return Container(
-      height: 38,
+      margin: EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Ingreso time
-          Expanded(
-            child: Column(
-              children: [
-                Center(
-                  child: BRAText(
-                    text: 'Ingreso',
-                    size: 10,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF5B5856),
-                  ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: BRAText(
+                  text: 'Fecha ingreso',
+                  size: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF5B5856),
                 ),
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(1),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF2F2F2),
-                      border: Border.all(color: const Color(0xFFC3C3C3)),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Center(
-                      child: BRAText(
-                        text: record.horaIngreso,
-                        size: 10,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF5B5856),
-                      ),
-                    ),
-                  ),
+              ),
+              Center(
+                child: BRAText(
+                  text: record.horaIngreso,
+                  size: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF5B5856),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          // Separator
-          Container(
-            width: 3,
-            height: 2,
-            margin: const EdgeInsets.symmetric(horizontal: 1),
-            color: const Color(0xFFC3C3C3),
-          ),
+          SizedBox(height: 6),
           // Validación time
-          Expanded(
-            child: Column(
-              children: [
-                Center(
-                  child: BRAText(
-                    text: 'Validación',
-                    size: 10,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF5B5856),
-                  ),
+          Column(
+            children: [
+              Center(
+                child: BRAText(
+                  text: 'Fecha validación',
+                  size: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF5B5856),
                 ),
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(1),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF2F2F2),
-                      border: Border.all(color: const Color(0xFFC3C3C3)),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Center(
-                      child: BRAText(
-                        text: record.horaValidacion,
-                        size: 10,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF5B5856),
-                      ),
-                    ),
-                  ),
+              ),
+              Center(
+                child: BRAText(
+                  text: record.horaValidacion,
+                  size: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF5B5856),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

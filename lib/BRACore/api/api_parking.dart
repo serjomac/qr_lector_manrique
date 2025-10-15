@@ -7,6 +7,7 @@ import 'package:qr_scaner_manrique/BRACore/api/dio_client.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/error_response_model.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/register_manual_parking_response.dart';
+import 'package:qr_scaner_manrique/BRACore/models/request_models/parking_history_response.dart';
 
 class ApiParking {
   final Dio _dio = DioClient().dio;
@@ -271,6 +272,37 @@ class ApiParking {
       ResponseErrorModel errorModel = ResponseErrorModel(
         codigoError: e.response?.statusCode ?? 0,
         mensaje: e.response?.data['mensaje'] ?? 'Error al registrar salida de parqueo',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }
+
+  Future<List<ParkingHistoryResponse>> getAllParqueoHistorial({
+    required String placeId,
+    required String startDate,
+    required String endDate,
+    required String doorId,
+  }) async {
+    try {
+      final response = await _dio.post('/getAllParqueoHistorial', data: {
+        'id_lugar': placeId,
+        'fecha_inicio': startDate,
+        'fecha_termino': endDate,
+        'id_puerta': doorId,
+      });
+      log('getAllParqueoHistorial response: ${json.encode(response.data)}');
+      
+      final List<dynamic> responseData = response.data;
+      final List<ParkingHistoryResponse> res = responseData
+          .map((item) => ParkingHistoryResponse.fromJson(item))
+          .toList();
+      return res;
+    } on DioError catch (e) {
+      log('Error in getAllParqueoHistorial: ${e.toString()}');
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Error al obtener historial de parqueo',
         causa: e.response?.data['causa'] ?? 'Unknown cause',
       );
       return Future.error(errorModel);

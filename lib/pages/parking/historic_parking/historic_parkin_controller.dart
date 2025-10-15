@@ -4,6 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:qr_scaner_manrique/pages/parking/historic_parking/parking_date_range_historic.dart';
 import 'package:qr_scaner_manrique/utils/AppLocations.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:qr_scaner_manrique/BRACore/api/api_parking.dart';
+import 'package:qr_scaner_manrique/BRACore/models/request_models/parking_history_response.dart';
+import 'package:qr_scaner_manrique/BRACore/models/user_data.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
+import 'package:qr_scaner_manrique/BRACore/enums/main_parking_entry.dart';
+import 'package:qr_scaner_manrique/pages/parking/validate_parking/validate_parking_page.dart';
 
 class FilterLastDay {
   final String title;
@@ -38,9 +44,19 @@ class HistoricParkinController extends GetxController {
   
   // Vehicle records list
   List<VehicleRecord> vehicleRecords = [];
+  List<VehicleRecord> allVehicleRecords = []; // Original unfiltered list
+  
+  // API parking history data
+  List<ParkingHistoryResponse> parkingHistoryData = [];
+  
+  // Filter properties
+  VehicleStatus? selectedStatusFilter;
   
   // Loading state
-  bool isLoading = false;
+  final RxBool isLoading = false.obs;
+  
+  // API instance
+  final ApiParking _apiParking = ApiParking();
   
   @override
   void onInit() async {
@@ -86,109 +102,108 @@ class HistoricParkinController extends GetxController {
   }
   
   // Method to fetch vehicle records based on date range
-  void fetchVehicleRecords() {
-    isLoading = true;
-    update();
-    
-    // Simulate API call with different data based on date range
-    Future.delayed(Duration(milliseconds: 500), () {
-      _loadVehicleDataForDateRange();
-      isLoading = false;
+  Future<void> fetchVehicleRecords({bool clearFilters = false}) async {
+    try {
+      isLoading.value = true;
+      
+      // Clear filters if requested (e.g., on refresh)
+      if (clearFilters) {
+        this.clearFilters();
+      }
+      
+      // Get placeId from UserData
+      final String placeId = UserData.sharedInstance.placeSelected?.idLugar?.toString() ?? '1';
+      
+      // Format dates for API: "YYYY-MM-DD HH:MM:SS"
+      final String startDateFormatted =
+          "${startDate.year.toString().padLeft(4, '0')}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')} ${startDate.hour.toString().padLeft(2, '0')}:${startDate.minute.toString().padLeft(2, '0')}:${startDate.second.toString().padLeft(2, '0')}";
+      final String endDateFormatted =
+          "${endDate.year.toString().padLeft(4, '0')}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')} ${endDate.hour.toString().padLeft(2, '0')}:${endDate.minute.toString().padLeft(2, '0')}:${endDate.second.toString().padLeft(2, '0')}";
+      
+      // Use a default door ID (you can modify this as needed)
+      const String doorId = '20';
+      
+      // Call API service
+      parkingHistoryData = await _apiParking.getAllParqueoHistorial(
+        placeId: placeId,
+        startDate: startDateFormatted,
+        endDate: endDateFormatted,
+        doorId: doorId,
+      );
+      
+      // Convert API data to VehicleRecord format for UI compatibility
+      _mapApiDataToVehicleRecords();
+      
+    } catch (e) {
+      print('Error fetching parking history: $e');
+      // Clear data on error
+      parkingHistoryData.clear();
+      allVehicleRecords.clear();
+      vehicleRecords.clear();
+    } finally {
+      isLoading.value = false;
       update();
-    });
+    }
   }
   
-  void _loadVehicleDataForDateRange() {
-    // Generate different sample data based on selected date range
-    int daysDiff = endDate.difference(startDate).inDays;
+  void _mapApiDataToVehicleRecords() {
+    allVehicleRecords = parkingHistoryData.map((parkingData) {
+      return VehicleRecord(
+        idIngreso: parkingData.idIngreso,
+        placa: parkingData.placa?.toUpperCase() ?? 'N/A',
+        puerta: (parkingData.nombrePuerta ?? '').toUpperCase(),
+        horaIngreso: _formatTime(parkingData.fechaIngreso),
+        horaValidacion: _formatTime(parkingData.fechaValidacion),
+        tiempoAcumulado: _calculateAccumulatedTime(parkingData),
+        estado: _mapApiStatusToVehicleStatus(parkingData.estado),
+        tipoValidacion: parkingData.ingreso?.tipoIngreso ?? 'N/A',
+      );
+    }).toList();
     
-    List<VehicleRecord> baseRecords = [
-      VehicleRecord(
-        placa: 'GDF 4576',
-        puerta: 'PUERTA X',
-        horaIngreso: '10:45 AM',
-        horaValidacion: '10:45 AM',
-        tiempoAcumulado: '1h 45min',
-        estado: VehicleStatus.validado,
-        tipoValidacion: 'Garita',
-      ),
-      VehicleRecord(
-        placa: 'ABC 1234',
-        puerta: 'PUERTA Y',
-        horaIngreso: '9:30 AM',
-        horaValidacion: '9:35 AM',
-        tiempoAcumulado: '2h 15min',
-        estado: VehicleStatus.ingresado,
-        tipoValidacion: 'Automático',
-      ),
-      VehicleRecord(
-        placa: 'XYZ 9876',
-        puerta: 'PUERTA Z',
-        horaIngreso: '8:15 AM',
-        horaValidacion: '8:20 AM',
-        tiempoAcumulado: '3h 30min',
-        estado: VehicleStatus.retirado,
-        tipoValidacion: 'Manual',
-      ),
-      VehicleRecord(
-        placa: 'DEF 5555',
-        puerta: 'PUERTA X',
-        horaIngreso: '7:00 AM',
-        horaValidacion: '7:05 AM',
-        tiempoAcumulado: '4h 45min',
-        estado: VehicleStatus.caducado,
-        tipoValidacion: 'Garita',
-      ),
-    ];
+    // Apply current filters
+    _filterRecords();
+  }
+  
+  String _formatTime(DateTime? dateTime) {
+    if (dateTime == null) return '---';
     
-    // Add more records for longer periods
-    if (daysDiff > 1) {
-      baseRecords.addAll([
-        VehicleRecord(
-          placa: 'HIJ 7890',
-          puerta: 'PUERTA Y',
-          horaIngreso: '11:15 AM',
-          horaValidacion: '11:20 AM',
-          tiempoAcumulado: '2h 30min',
-          estado: VehicleStatus.validado,
-          tipoValidacion: 'Automático',
-        ),
-        VehicleRecord(
-          placa: 'KLM 2468',
-          puerta: 'PUERTA Z',
-          horaIngreso: '2:45 PM',
-          horaValidacion: '2:50 PM',
-          tiempoAcumulado: '1h 15min',
-          estado: VehicleStatus.ingresado,
-          tipoValidacion: 'Manual',
-        ),
-      ]);
+    // Format as dd - mm - yyyy hh:mm
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final year = dateTime.year.toString();
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    
+    return '$day-$month-$year $hour:$minute';
+  }
+  
+  String _calculateAccumulatedTime(ParkingHistoryResponse parkingData) {
+    if (parkingData.fechaIngreso == null) return '0h 0min';
+    
+    final DateTime ingreso = parkingData.fechaIngreso!;
+    final DateTime endTime = parkingData.fechaSalida ?? DateTime.now();
+    final Duration difference = endTime.difference(ingreso);
+    
+    final int hours = difference.inHours;
+    final int minutes = difference.inMinutes.remainder(60);
+    
+    return '${hours}h ${minutes}min';
+  }
+  
+  VehicleStatus _mapApiStatusToVehicleStatus(String? apiStatus) {
+    switch (apiStatus?.toUpperCase()) {
+      case 'INGRESADO':
+        return VehicleStatus.ingresado;
+      case 'SALIDA':
+      case 'RETIRADO':
+        return VehicleStatus.retirado;
+      case 'VALIDADO':
+        return VehicleStatus.validado;
+      case 'CADUCADO':
+        return VehicleStatus.caducado;
+      default:
+        return VehicleStatus.ingresado;
     }
-    
-    if (daysDiff > 3) {
-      baseRecords.addAll([
-        VehicleRecord(
-          placa: 'NOP 1357',
-          puerta: 'PUERTA X',
-          horaIngreso: '4:20 PM',
-          horaValidacion: '4:25 PM',
-          tiempoAcumulado: '3h 45min',
-          estado: VehicleStatus.retirado,
-          tipoValidacion: 'Garita',
-        ),
-        VehicleRecord(
-          placa: 'QRS 9753',
-          puerta: 'PUERTA Y',
-          horaIngreso: '6:10 PM',
-          horaValidacion: '6:15 PM',
-          tiempoAcumulado: '2h 10min',
-          estado: VehicleStatus.caducado,
-          tipoValidacion: 'Automático',
-        ),
-      ]);
-    }
-    
-    vehicleRecords = baseRecords;
   }
   
   void onSearchPlaca(String value) {
@@ -217,10 +232,136 @@ class HistoricParkinController extends GetxController {
   }
   
   void _filterRecords() {
-    // TODO: Implement filtering logic based on placa and tipo
-    // For now, just show all records
+    List<VehicleRecord> filteredRecords = List.from(allVehicleRecords);
+    
+    // Filter by status if selected
+    if (selectedStatusFilter != null) {
+      filteredRecords = filteredRecords
+          .where((record) => record.estado == selectedStatusFilter)
+          .toList();
+    }
+    
+    // Filter by placa search
+    final searchText = placaController.text.trim().toLowerCase();
+    if (searchText.isNotEmpty) {
+      filteredRecords = filteredRecords
+          .where((record) => record.placa.toLowerCase().contains(searchText))
+          .toList();
+    }
+    
+    // Filter by tipo if not "Todos"
+    if (selectedTipo != 'Todos') {
+      filteredRecords = filteredRecords
+          .where((record) => record.tipoValidacion.toLowerCase() == selectedTipo.toLowerCase())
+          .toList();
+    }
+    
+    vehicleRecords = filteredRecords;
   }
   
+  void onStatusFilterTap(VehicleStatus? status) {
+    selectedStatusFilter = status;
+    _filterRecords();
+    update();
+  }
+  
+  void clearFilters() {
+    selectedStatusFilter = null;
+    placaController.clear();
+    selectedTipo = 'Todos';
+    _filterRecords();
+    update();
+  }
+  
+  Map<VehicleStatus, int> getStatusCounts() {
+    Map<VehicleStatus, int> counts = {};
+    
+    for (VehicleStatus status in VehicleStatus.values) {
+      counts[status] = allVehicleRecords
+          .where((record) => record.estado == status)
+          .length;
+    }
+    
+    return counts;
+  }
+  
+  void onVehicleRecordTap(VehicleRecord record) {
+    // Find the corresponding parking history data
+    final ParkingHistoryResponse? parkingData = parkingHistoryData.firstWhereOrNull(
+      (data) => data.idIngreso == record.idIngreso,
+    );
+    
+    if (parkingData != null) {
+      // Convert ParkingHistoryResponse to ParrkingResponse for compatibility
+      final ParrkingResponse vehicleData = _convertToParrkingResponse(parkingData);
+      
+      // Navigate to ValidateParkingPage with history mode
+      Get.to(() => ValidateParkingPage(
+        vehicleData: vehicleData,
+        mainParkingEntry: MainParkingEntry.history,
+      ));
+    }
+  }
+  
+  ParrkingResponse _convertToParrkingResponse(ParkingHistoryResponse historyData) {
+    return ParrkingResponse(
+      idIngreso: historyData.idIngreso,
+      idLugar: historyData.idLugar,
+      idPuerta: historyData.idPuerta,
+      placa: historyData.placa,
+      estado: historyData.estado,
+      fechaIngreso: historyData.fechaIngreso,
+      fechaValidacion: historyData.fechaValidacion,
+      fechaSalida: historyData.fechaSalida,
+      observacion: historyData.observacion,
+      ingreso: historyData.ingreso != null ? Ingreso(
+        idIngreso: historyData.ingreso!.idIngreso,
+        idResidenteLugar: historyData.ingreso!.idResidenteLugar,
+        idInvitacion: historyData.ingreso!.idInvitacion,
+        idPuertaIngreso: historyData.ingreso!.idPuertaIngreso,
+        idPuertaSalida: historyData.ingreso!.idPuertaSalida,
+        nombrePuertaIngreso: historyData.ingreso!.nombrePuertaIngreso,
+        nombrePuertaSalida: historyData.ingreso!.nombrePuertaSalida,
+        idLugar: historyData.ingreso!.idLugar,
+        cedula: historyData.ingreso!.cedula,
+        celular: historyData.ingreso!.celular,
+        placa: historyData.ingreso!.placa,
+        imgIngreso: historyData.ingreso!.imgIngreso,
+        imgValidacion: historyData.ingreso!.imgValidacion,
+        imgSalida: historyData.ingreso!.imgSalida,
+        tipoIngreso: historyData.ingreso!.tipoIngreso,
+        tipoSalida: historyData.ingreso!.tipoSalida,
+        actividad: historyData.ingreso!.actividad,
+        observacionIngreso: historyData.ingreso!.observacionIngreso,
+        observacionValidacion: historyData.ingreso!.observacionValidacion,
+        observacionSalida: historyData.ingreso!.observacionSalida,
+        estado: historyData.ingreso!.estado,
+        fechaIngreso: historyData.ingreso!.fechaIngreso,
+        fechaValidacion: historyData.ingreso!.fechaValidacion,
+        fechaSalida: historyData.ingreso!.fechaSalida,
+        tarifaAplicada: historyData.ingreso!.tarifaAplicada,
+        tiempoTotal: historyData.ingreso!.tiempoTotal,
+        valorTotal: historyData.ingreso!.valorTotal,
+        tiempoHorasPago: historyData.ingreso!.tiempoHorasPago,
+        mensaje: historyData.ingreso!.mensaje,
+        fechaCreacion: historyData.ingreso!.fechaCreacion,
+        fechaModificacion: historyData.ingreso!.fechaModificacion,
+        usuarioCreacion: historyData.ingreso!.usuarioCreacion,
+        usuarioModificacion: historyData.ingreso!.usuarioModificacion,
+        nombresResidente: historyData.ingreso!.nombresResidente,
+        apellidosResidente: historyData.ingreso!.apellidosResidente,
+        cedulaResidente: historyData.ingreso!.cedulaResidente,
+        celularResidente: historyData.ingreso!.celularResidente,
+        primarioResidente: historyData.ingreso!.primarioResidente,
+        secundarioResidente: historyData.ingreso!.secundarioResidente,
+        nombresInvitado: historyData.ingreso!.nombresInvitado,
+        idIngresoVinculo: historyData.ingreso!.idIngresoVinculo,
+        idSalidaVinculo: historyData.ingreso!.idSalidaVinculo,
+        nombreLugar: historyData.ingreso!.nombreLugar,
+      ) : null,
+    );
+  }
+
   void onBackPressed() {
     Get.back();
   }
@@ -234,6 +375,7 @@ class HistoricParkinController extends GetxController {
 
 // Vehicle record model
 class VehicleRecord {
+  final int? idIngreso;
   final String placa;
   final String puerta;
   final String horaIngreso;
@@ -243,6 +385,7 @@ class VehicleRecord {
   final String tipoValidacion;
   
   VehicleRecord({
+    required this.idIngreso,
     required this.placa,
     required this.puerta,
     required this.horaIngreso,
@@ -279,39 +422,39 @@ extension VehicleStatusExtension on VehicleStatus {
   Color get backgroundColor {
     switch (this) {
       case VehicleStatus.ingresado:
-        return const Color(0xFFFEEFC8); // Light orange
+        return const Color(0xFFCDE7FE); // Light orange
       case VehicleStatus.retirado:
-        return const Color(0xFFFEC8C8); // Light red
+        return const Color(0xFFFEEFC8); // Light red
       case VehicleStatus.validado:
         return const Color(0xFFCFF9E6); // Light green
       case VehicleStatus.caducado:
-        return const Color(0xFFE5E8EC); // Light gray
+        return const Color(0xFFFEC8C8); // Light gray
     }
   }
   
   Color get textColor {
     switch (this) {
       case VehicleStatus.ingresado:
-        return const Color(0xFFB86E00); // Orange
+        return const Color(0xFF084F9C); // Orange
       case VehicleStatus.retirado:
-        return const Color(0xFFA10101); // Red
+        return const Color(0xFFB86E00); // Red
       case VehicleStatus.validado:
         return const Color(0xFF036546); // Green
       case VehicleStatus.caducado:
-        return const Color(0xFF565656); // Gray
+        return const Color(0xFFA10101); // Gray
     }
   }
   
   Color get borderColor {
     switch (this) {
       case VehicleStatus.ingresado:
-        return const Color(0xFFB86E00); // Orange
+        return const Color(0xFF084F9C); // Orange
       case VehicleStatus.retirado:
-        return const Color(0xFFA10101); // Red
+        return const Color(0xFFB86E00); // Red
       case VehicleStatus.validado:
         return const Color(0xFF036546); // Green
       case VehicleStatus.caducado:
-        return const Color(0xFF565656); // Gray
+        return const Color(0xFFA10101); // Gray
     }
   }
 }

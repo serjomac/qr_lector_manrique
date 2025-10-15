@@ -34,10 +34,10 @@ class VehiclesListPage extends StatelessWidget {
                 // Search field
                 _buildSearchField(controller),
                 // Vehicle list or loading
-                Expanded(
-                  child: controller.isLoading.value 
-                      ? LoadingInvitationsPage()
-                      : _buildVehicleList(controller),
+                Obx(
+                  () => controller.isLoading.value 
+                      ? Expanded(child: LoadingInvitationsPage())
+                      : Expanded(child: _buildVehicleList(controller)),
                 ),
               ],
             ),
@@ -73,7 +73,7 @@ class VehiclesListPage extends StatelessWidget {
           // Title
           Expanded(
             child: BRAText(
-              text: controller.mainParkingEntry == MainParkingEntry.validation ? 'Vehículos para validar' : 'Vehículos pasa salir',
+              text: controller.mainParkingEntry == MainParkingEntry.validation ? 'Vehículos para validar' : 'Vehículos para salir',
               size: 18,
               fontWeight: FontWeight.w600,
               color: Color(0xFF231918),
@@ -85,7 +85,6 @@ class VehiclesListPage extends StatelessWidget {
   }
 
   Widget _buildDateSelectionSection(VehiclesValidationListController controller) {
-    print('Building date selection section. Controller: ${controller.lasDaysSelected?.title ?? "null"}');
     
     return Container(
       margin: const EdgeInsets.only(top: 16, left: 24, right: 24),
@@ -179,18 +178,61 @@ class VehiclesListPage extends StatelessWidget {
   Widget _buildVehicleList(VehiclesValidationListController controller) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
-      child: ListView.builder(
-        itemCount: controller.filteredVehicleEntries.length,
-        itemBuilder: (context, index) {
-          final entry = controller.filteredVehicleEntries[index];
-          
-          return Container(
-            margin: const EdgeInsets.only(bottom: 15),
-            child: _buildVehicleCard(entry, index, () {
-              controller.onVehicleCardTap(entry);
-            }, controller),
-          );
+      child: RefreshIndicator(
+        color: Theme.of(Get.context!).primaryColor,
+        backgroundColor: Colors.white,
+        onRefresh: () async {
+          await controller.loadVehicleEntries();
         },
+        child: controller.filteredVehicleEntries.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  Container(
+                    height: MediaQuery.of(Get.context!).size.height * 0.5,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.directions_car_outlined,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          BRAText(
+                            text: 'No hay vehículos',
+                            size: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[600]!,
+                          ),
+                          const SizedBox(height: 8),
+                          BRAText(
+                            text: 'Desliza hacia abajo para actualizar',
+                            size: 14,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.grey[500]!,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: controller.filteredVehicleEntries.length,
+                itemBuilder: (context, index) {
+                  final entry = controller.filteredVehicleEntries[index];
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 15),
+                    child: _buildVehicleCard(entry, index, () {
+                      controller.onVehicleCardTap(entry);
+                    }, controller),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -252,8 +294,8 @@ class VehiclesListPage extends StatelessWidget {
               
               // Time section (right)
               Positioned(
-                right: 15,
-                top: 41,
+                right: 50,
+                top: 45,
                 child: _buildTimeSection(entry),
               ),
               
@@ -311,6 +353,7 @@ class VehiclesListPage extends StatelessWidget {
 
   Widget _buildVehicleInfo(ParrkingResponse entry) {
     return Container(
+      width: 160,
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: const Color(0xFFF2F2F2),
@@ -346,7 +389,7 @@ class VehiclesListPage extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               BRAText(
-                text: entry.placa?.toUpperCase() ?? '',
+                text: entry.placa?.toUpperCase() ?? 'N/A',
                 size: 20,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFFEB472A),
@@ -375,96 +418,55 @@ class VehiclesListPage extends StatelessWidget {
   }
 
   Widget _buildTimeSection(ParrkingResponse entry) {
-    return Container(
-      width: 156,
-      height: 70,
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F2),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        children: [
-          // Ingreso time
-          Expanded(
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF2F2F2),
-                  ),
-                  child: BRAText(
-                    text: 'Ingreso',
-                    size: 10,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF5B5856),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F2F2),
-                    border: Border.all(color: const Color(0xFFC3C3C3)),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: BRAText(
-                    text: _formatDateTime(entry.fechaIngreso),
-                    size: 10,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF5B5856),
-                  ),
-                ),
-              ],
+    return Column(
+      children: [
+        // Ingreso time
+        Column(
+          children: [
+            BRAText(
+              text: 'Ingreso',
+              size: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF5B5856),
             ),
-          ),
-          
-          // Separator
-          Container(
-            width: 5,
-            height: 2,
-            color: const Color(0xFFC3C3C3),
-          ),
-          
-          // Validación time
-          Expanded(
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF2F2F2),
-                  ),
-                  child: BRAText(
-                    text: 'Validación',
-                    size: 10,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF5B5856),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F2F2),
-                    border: Border.all(color: const Color(0xFFC3C3C3)),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Center(
-                    child: BRAText(
-                      text: _formatDateTime(entry.fechaValidacion),
-                      size: 10,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF5B5856),
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 2),
+            BRAText(
+              text: _formatDateTime(entry.fechaIngreso),
+              size: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF5B5856),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+        
+        // Separator
+        Container(
+          width: 5,
+          height: 2,
+          color: const Color(0xFFC3C3C3),
+        ),
+        
+        // Validación time
+        Column(
+          children: [
+            BRAText(
+              text: 'Validación',
+              size: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF5B5856),
+            ),
+            const SizedBox(height: 2),
+            Center(
+              child: BRAText(
+                text: _formatDateTime(entry.fechaValidacion),
+                size: 12,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF5B5856),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -496,14 +498,14 @@ class VehiclesListPage extends StatelessWidget {
   int _getEstadoColor(ParrkingResponse entry) {
     final estado = entry.estado?.toLowerCase() ?? '';
     switch (estado) {
-      case 'validado':
+      case 'valido':
         return 0xFF036546; // Green
-      case 'ingresado':
-        return 0xFFB86E00; // Orange
+      case 'ingreso':
+        return 0xFF084F9C; // Orange
       case 'retirado':
-        return 0xFFA10101; // Red
+        return 0xFFB86E00; // Red
       case 'caducado':
-        return 0xFF565656; // Gray
+        return 0xFFA10101; // Gray
       default:
         return 0xFFB86E00; // Default orange
     }
@@ -512,14 +514,14 @@ class VehiclesListPage extends StatelessWidget {
   int _getEstadoBgColor(ParrkingResponse entry) {
     final estado = entry.estado?.toLowerCase() ?? '';
     switch (estado) {
-      case 'validado':
+      case 'valido':
         return 0xFFCFF9E6; // Light green
-      case 'ingresado':
-        return 0xFFFEEFC8; // Light orange
+      case 'ingreso':
+        return 0xFFCDE7FE; // Light orange
       case 'retirado':
-        return 0xFFFEC8C8; // Light red
+        return 0xFFFEEFC8; // Light red
       case 'caducado':
-        return 0xFFE5E8EC; // Light gray
+        return 0xFFFEC8C8; // Light gray
       default:
         return 0xFFFEEFC8; // Default light orange
     }
@@ -528,13 +530,14 @@ class VehiclesListPage extends StatelessWidget {
   String _formatDateTime(DateTime? dateTime) {
     if (dateTime == null) return '---';
     
-    // Format as HH:MM AM/PM
-    final hour = dateTime.hour;
-    final minute = dateTime.minute;
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    // Format as dd-mm-yyyy hh:mm
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final year = dateTime.year.toString();
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
     
-    return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
+    return '$day-$month-$year $hour:$minute';
   }
 
   String _calculateAccumulatedTime(ParrkingResponse entry) {

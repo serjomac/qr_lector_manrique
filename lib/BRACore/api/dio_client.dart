@@ -6,8 +6,8 @@ class DioClient {
   DioClient() {
     _dio.options
       ..baseUrl = 'http://34.27.124.191/apiRest6/corp/v1'
-      ..connectTimeout = 5000
-      ..receiveTimeout = 5000;
+      ..connectTimeout = 8000
+      ..receiveTimeout = 8000;
     _dio.interceptors.add(AppInterceptors());
   }
   Dio get dio {

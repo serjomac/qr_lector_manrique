@@ -20,11 +20,12 @@ class ParkingHomePage extends StatelessWidget {
         init: ParkingHomeController(),
         builder: (controller) {
           return SafeArea(
+            bottom: false,
             child: Stack(
               children: [
                 // Imagen de fondo de la ciudad en la parte inferior
                 Positioned(
-                  bottom: -20,
+                  bottom: 0,
                   left: -100,
                   right: -100,
                   child: Opacity(
@@ -36,24 +37,30 @@ class ParkingHomePage extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 // Contenido principal
                 Column(
                   children: [
                     // Top bar personalizada
                     _buildTopBar(controller, context),
-                    
-                    // Dropdown de selección de puerta
-                    _buildParkingGateSelector(controller),
-                    
-                    // Opciones principales del parqueo
-                    Expanded(
-                      child: _buildParkingOptions(controller),
+                    const SizedBox(height: 32),
+
+                    // Logo de la aplicación
+                    Image(
+                      image: AssetImage('assets/images/logo-dark.png'),
+                      width: 150,
                     ),
-                    
+
+                    // Dropdown de selección de puerta
+                    _buildParkingGateSelector(controller, Theme.of(context)),
+                    const SizedBox(height: 48),
+
+                    // Opciones principales del parqueo
+                    _buildParkingOptions(controller, Theme.of(context)),
+                    const SizedBox(height: 48),
+
                     // Botón de historial flotante
                     _buildHistoryButton(controller),
-                    
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -109,7 +116,7 @@ class ParkingHomePage extends StatelessWidget {
               ),
             ],
           ),
-          
+
           // Lado derecho - Icono de logout (igual que HomePage)
           InkWell(
             onTap: () {
@@ -126,7 +133,9 @@ class ParkingHomePage extends StatelessWidget {
                     color: Color(0xFF231918),
                   ),
                   BRAText(
-                    text: AppLocalizationsGenerator.appLocalizations(context: context).logoutLabel,
+                    text: AppLocalizationsGenerator.appLocalizations(
+                            context: context)
+                        .logoutLabel,
                     size: 15,
                     color: const Color(0xFF231918),
                   ),
@@ -139,7 +148,8 @@ class ParkingHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildParkingGateSelector(ParkingHomeController controller) {
+  Widget _buildParkingGateSelector(
+      ParkingHomeController controller, ThemeData theme) {
     return Container(
       margin: const EdgeInsets.only(top: 32, left: 25, right: 25),
       child: Obx(() {
@@ -161,11 +171,12 @@ class ParkingHomePage extends StatelessWidget {
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF5F5F5),
                     border: Border.all(color: const Color(0xFFC3C3C3)),
-                    borderRadius: BorderRadius.circular(50),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<GateDoor>(
@@ -195,7 +206,8 @@ class ParkingHomePage extends StatelessWidget {
                           controller.changeParkingGate(newValue);
                         }
                       },
-                      items: controller.parkingEntrances.map<DropdownMenuItem<GateDoor>>((GateDoor gate) {
+                      items: controller.parkingEntrances
+                          .map<DropdownMenuItem<GateDoor>>((GateDoor gate) {
                         return DropdownMenuItem<GateDoor>(
                           value: gate,
                           child: Text(gate.nombre ?? ''),
@@ -209,12 +221,13 @@ class ParkingHomePage extends StatelessWidget {
               InkWell(
                 onTap: () {
                   controller.fetchParkingEntrances(
-                    placeId: UserData.sharedInstance.placeSelected!.idLugar.toString(),
+                    placeId: UserData.sharedInstance.placeSelected!.idLugar
+                        .toString(),
                   );
                 },
-                child: const Icon(
+                child: Icon(
                   Icons.refresh,
-                  color: Color(0xFF202023),
+                  color: theme.primaryColor,
                   size: 35,
                 ),
               ),
@@ -225,7 +238,8 @@ class ParkingHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildParkingOptions(ParkingHomeController controller) {
+  Widget _buildParkingOptions(
+      ParkingHomeController controller, ThemeData theme) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -234,29 +248,35 @@ class ParkingHomePage extends StatelessWidget {
           // Validación de parqueo
           _buildOptionCard(
             title: 'Validación de parqueo',
-            iconColor: const Color(0xFFE8D6D3),
+            iconColor: const Color(0xFF231918),
             iconData: Icons.qr_code_scanner,
+            iconBackgroundColor: const Color(0xFFF5F5F5),
             onTap: controller.goToValidation,
+            theme: theme,
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Ingreso de parqueo
           _buildOptionCard(
             title: 'Ingreso de parqueo',
-            iconColor: const Color(0xFFF5F5F5),
+            iconColor: const Color(0xFF2EAB03),
+            iconBackgroundColor: const Color(0xFFF5F5F5),
             iconData: Icons.login,
             onTap: controller.goToEntry,
+            theme: theme,
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Salida de parqueo
           _buildOptionCard(
             title: 'Salida de parqueo',
-            iconColor: const Color(0xFFF5F5F5),
+            iconColor: const Color(0xFFBA1A1A),
+            iconBackgroundColor: const Color(0xFFF5F5F5),
             iconData: Icons.logout,
             onTap: controller.goToExit,
+            theme: theme,
           ),
         ],
       ),
@@ -265,9 +285,11 @@ class ParkingHomePage extends StatelessWidget {
 
   Widget _buildOptionCard({
     required String title,
+    required Color iconBackgroundColor,
     required Color iconColor,
     required IconData iconData,
     required VoidCallback onTap,
+    required ThemeData theme,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -275,7 +297,7 @@ class ParkingHomePage extends StatelessWidget {
         width: 342,
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: const Color(0xFF85736F)),
+          border: Border.all(color: theme.primaryColor),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
@@ -287,18 +309,18 @@ class ParkingHomePage extends StatelessWidget {
                 width: 45,
                 height: 45,
                 decoration: BoxDecoration(
-                  color: iconColor,
+                  color: iconBackgroundColor,
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Icon(
                   iconData,
                   size: 24,
-                  color: const Color(0xFF231918),
+                  color: iconColor,
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Título de la opción
               Expanded(
                 child: BRAText(

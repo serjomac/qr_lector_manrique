@@ -279,38 +279,6 @@ class ValidateParkingPage extends StatelessWidget {
             },
           ),
         ),
-        
-        // Texto informativo para modo validación
-        if (controller.isImageGridReadOnly) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFCFF9E6),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF036546), width: 1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.info_outline,
-                  color: Color(0xFF036546),
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                const Expanded(
-                  child: BRAText(
-                    text: "Imágenes de ingreso (solo visualización)",
-                    size: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF036546),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }

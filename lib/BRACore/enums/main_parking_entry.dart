@@ -8,4 +8,7 @@ enum MainParkingEntry {
   
   /// Modo de registro de salida
   exit,
+  
+  /// Modo de visualización de historial (solo lectura)
+  history,
 }

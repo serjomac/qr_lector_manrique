@@ -22,6 +22,7 @@ class PropertyActionsModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final permisos = place.permisosBitacora?.getActivePermissions() ?? [];
 
     return Container(
       decoration: BoxDecoration(
@@ -45,51 +46,86 @@ class PropertyActionsModal extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
-              children: [
-                _buildActionButton(
-                  context,
-                  icon: ConstantsIcons.qrIcon,
-                  label: 'PINLET GARITA',
-                  onTap: () {
-                    Get.back();
-                    Get.to(() => HomePage(
-                          showNewVersionButton: showNewVersionButton,
-                          initialTab: 0,
-                          propertyEntryType: PropertyEntryType.residentGate,
-                        ));
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildActionButton(
-                  context,
-                  icon: ConstantsIcons.qrIcon,
-                  label: 'PINLET COLEGIO',
-                  onTap: () {
-                    Get.back();
-                    Get.to(() => HomePage(
-                          showNewVersionButton: showNewVersionButton,
-                          initialTab: 0,
-                          propertyEntryType: PropertyEntryType.schoolGate,
-                        ));
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildActionButton(
-                  context,
-                  icon: ConstantsIcons.qrIcon,
-                  label: 'PINLET PARQUEO',
-                  onTap: () {
-                    Get.back();
-                       Get.to(() => const ParkingHomePage());
-                  },
-                ),
-              ],
+              children: _buildActionButtons(context, permisos),
             ),
           ),
           const SizedBox(height: 32),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildActionButtons(BuildContext context, List<String> permisos) {
+    List<Widget> buttons = [];
+
+    for (int i = 0; i < permisos.length; i++) {
+      if (i > 0) {
+        buttons.add(const SizedBox(height: 16));
+      }
+
+      switch (permisos[i]) {
+        case 'bitacora':
+          buttons.add(_buildActionButton(
+            context,
+            icon: ConstantsIcons.qrIcon,
+            label: 'PINLET GARITA',
+            onTap: () {
+              Get.back();
+              Get.to(() => HomePage(
+                    showNewVersionButton: showNewVersionButton,
+                    initialTab: 0,
+                    propertyEntryType: PropertyEntryType.residentGate,
+                  ));
+            },
+          ));
+          break;
+        case 'colegio':
+          buttons.add(_buildActionButton(
+            context,
+            icon: ConstantsIcons.studentIcon,
+            label: 'PINLET COLEGIO',
+            onTap: () {
+              Get.back();
+              Get.to(() => HomePage(
+                    showNewVersionButton: showNewVersionButton,
+                    initialTab: 0,
+                    propertyEntryType: PropertyEntryType.schoolGate,
+                  ));
+            },
+          ));
+          break;
+        case 'parqueo':
+          buttons.add(_buildActionButton(
+            context,
+            icon: ConstantsIcons.parkingIcon,
+            label: 'PINLET PARQUEO',
+            onTap: () {
+              Get.back();
+              Get.to(() => const ParkingHomePage());
+            },
+          ));
+          break;
+      }
+    }
+
+    // Si no hay permisos activos, mostrar un mensaje
+    if (buttons.isEmpty) {
+      buttons.add(
+        Container(
+          padding: const EdgeInsets.all(24),
+          child: BRAText(
+            text: 'No tienes permisos activos para esta propiedad',
+            textStyle: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).own().primareyTextColor!.withOpacity(0.6),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return buttons;
   }
 
   Widget _buildActionButton(

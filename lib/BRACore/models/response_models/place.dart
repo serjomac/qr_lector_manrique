@@ -36,6 +36,7 @@ class Place {
   String? usuarioCreacion;
   DateTime? fechaModificacion;
   String? usuarioModificacion;
+  PermisosBitacora? permisosBitacora;
 
   Place({
     this.idLugar,
@@ -63,6 +64,7 @@ class Place {
     this.usuarioCreacion,
     this.fechaModificacion,
     this.usuarioModificacion,
+    this.permisosBitacora,
   });
 
   factory Place.fromJson(Map<String, dynamic> json) => Place(
@@ -95,6 +97,9 @@ class Place {
             ? null
             : DateTime.parse(json["fecha_modificacion"]),
         usuarioModificacion: json["usuario_modificacion"],
+        permisosBitacora: json["permisosBitacora"] == null
+            ? null
+            : PermisosBitacora.fromJsonString(json["permisosBitacora"]),
       );
 
   Map<String, dynamic> toJson() => {
@@ -123,7 +128,53 @@ class Place {
         "usuario_creacion": usuarioCreacion,
         "fecha_modificacion": fechaModificacion?.toIso8601String(),
         "usuario_modificacion": usuarioModificacion,
+        "permisosBitacora": permisosBitacora?.toJsonString(),
       };
+}
+
+class PermisosBitacora {
+  bool bitacora;
+  bool parqueo;
+  bool colegio;
+
+  PermisosBitacora({
+    required this.bitacora,
+    required this.parqueo,
+    required this.colegio,
+  });
+
+  factory PermisosBitacora.fromJsonString(String jsonString) {
+    try {
+      final Map<String, dynamic> json = jsonDecode(jsonString);
+      return PermisosBitacora.fromJson(json);
+    } catch (e) {
+      // En caso de error, devolver permisos por defecto (todos false)
+      return PermisosBitacora(bitacora: false, parqueo: false, colegio: false);
+    }
+  }
+
+  factory PermisosBitacora.fromJson(Map<String, dynamic> json) => PermisosBitacora(
+        bitacora: json["bitacora"] ?? false,
+        parqueo: json["parqueo"] ?? false,
+        colegio: json["colegio"] ?? false,
+      );
+
+  Map<String, dynamic> toJson() => {
+        "bitacora": bitacora,
+        "parqueo": parqueo,
+        "colegio": colegio,
+      };
+
+  String toJsonString() => jsonEncode(toJson());
+
+  // Método helper para obtener los permisos activos
+  List<String> getActivePermissions() {
+    List<String> activePermissions = [];
+    if (bitacora) activePermissions.add('bitacora');
+    if (parqueo) activePermissions.add('parqueo');
+    if (colegio) activePermissions.add('colegio');
+    return activePermissions;
+  }
 }
 
 enum Estado { A, I, P }

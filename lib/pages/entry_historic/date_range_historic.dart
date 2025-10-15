@@ -55,7 +55,7 @@ class DateRangeHistoric extends StatelessWidget {
                             decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(8),
                                 color: Color(0xFFFFF8F6),
-                                border: Border.all(color: Color(0xFFD8C2BD))),
+                                border: Border.all(color: theme.primaryColor)),
                             child: Center(
                                 child: BRAText(
                               text: filter.title,
@@ -114,18 +114,18 @@ class DateRangeHistoric extends StatelessWidget {
                           textStyle:
                               TextStyle(color: theme.own().primareyTextColor)),
                       showActionButtons: true,
-                      rangeSelectionColor: Color(0xFFEDE0DD),
+                      rangeSelectionColor: theme.primaryColor.withOpacity(0.2),
                       onCancel: () {
                         _.endDateTemprary = DateTime.now();
                         Get.back();
                       },
                       rangeTextStyle: TextStyle(
                           color: theme.own().primareyTextColor, fontSize: 16),
-                      startRangeSelectionColor: Color(0xFF85736F),
-                      endRangeSelectionColor: Color(0xFF85736F),
+                      startRangeSelectionColor: theme.primaryColor,
+                      endRangeSelectionColor: theme.primaryColor,
                       selectionTextStyle:
                           TextStyle(color: Colors.white, fontSize: 16),
-                      todayHighlightColor: Color(0xFF85736F),
+                      todayHighlightColor: theme.primaryColor,
                       initialSelectedRange: PickerDateRange(
                         _.startDate,
                         _.endDate,

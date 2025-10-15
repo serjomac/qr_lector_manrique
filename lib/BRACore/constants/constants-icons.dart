@@ -11,4 +11,5 @@ abstract class ConstantsIcons {
   static const carsideIcon = 'assets/icons/carside_icon.svg';
   static const hisotric = 'assets/icons/historial.svg';
   static const studentIcon = 'assets/icons/student-icon.svg';
+  static const parkingIcon = 'assets/icons/parkingIcon.svg';
 }

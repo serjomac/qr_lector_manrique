@@ -75,7 +75,7 @@ class ManualRegisterSuccessQrBottomSheet extends StatelessWidget {
                         key: controller.webViewKey,
                         child: SizedBox(
                           width: size.width * 0.9,
-                          height: 620,
+                          height: size.height * 0.8,
                           child: WebViewWidget(controller: controller.webViewController),
                         ),
                       ),
