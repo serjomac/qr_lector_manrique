@@ -12,6 +12,7 @@ import 'package:qr_scaner_manrique/BRACore/models/response_models/auth_login.dar
 import 'package:qr_scaner_manrique/BRACore/models/response_models/place.dart';
 import 'package:qr_scaner_manrique/BRACore/models/user_data.dart';
 import 'package:qr_scaner_manrique/pages/home/home_page.dart';
+import 'package:qr_scaner_manrique/pages/parking/parking_home/parking_home_page.dart';
 import 'package:qr_scaner_manrique/pages/properties/widgets/property_actions_modal.dart';
 import 'package:qr_scaner_manrique/pages/school/exit_without_qr_request_form/enums/registration_type.dart';
 import 'package:qr_scaner_manrique/shared/widgets/success_dialog.dart';
@@ -248,6 +249,17 @@ class PropertiesController extends GetxController with WidgetsBindingObserver {
       return;
     }
     UserData.sharedInstance.placeSelected = placeTemp;
+    
+    // Check if there's only one permission enabled
+    final enabledPermissions = _getEnabledPermissions(placeTemp);
+    
+    if (enabledPermissions.length == 1) {
+      // Navigate directly to the single enabled permission
+      _navigateToSinglePermission(enabledPermissions.first);
+      return;
+    }
+    
+    // Show bottom sheet if multiple permissions or no permissions
     Get.bottomSheet(
       PropertyActionsModal(
         place: placeTemp,
@@ -293,5 +305,46 @@ class PropertiesController extends GetxController with WidgetsBindingObserver {
       if (actual[i] < minima[i]) return true;
     }
     return false;
+  }
+
+  /// Get list of enabled permissions from place.permisosBitacora
+  List<String> _getEnabledPermissions(Place place) {
+    // Use the same logic as PropertyActionsModal
+    return place.permisosBitacora?.getActivePermissions() ?? [];
+  }
+
+  /// Navigate directly to the specified permission
+  void _navigateToSinglePermission(String permission) {
+    // Use the same navigation pattern as PropertyActionsModal
+    switch (permission) {
+      case 'bitacora':
+        Get.to(() => HomePage(
+              showNewVersionButton: showNewVersionButton,
+              initialTab: 0,
+              propertyEntryType: PropertyEntryType.residentGate,
+            ));
+        break;
+      case 'colegio':
+        Get.to(() => HomePage(
+              showNewVersionButton: showNewVersionButton,
+              initialTab: 0,
+              propertyEntryType: PropertyEntryType.schoolGate,
+            ));
+        break;
+      case 'parqueo':
+        Get.to(() => const ParkingHomePage());
+        break;
+      default:
+        // Fallback: show the bottom sheet
+        Get.bottomSheet(
+          PropertyActionsModal(
+            place: UserData.sharedInstance.placeSelected!,
+            showNewVersionButton: showNewVersionButton,
+          ),
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+        );
+        break;
+    }
   }
 }

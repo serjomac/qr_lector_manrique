@@ -70,6 +70,15 @@ class InvitationCard extends StatelessWidget {
                               ? invitation?.tipo?.value ?? ''
                               : entry?.tipoAcceso?.value ?? '',
                           size: size.height < SizePhone.HEGTH_S ? 11 : 13.5,
+                          color: cardInvitationType ==
+                                  CardInvitationType.residentGateEntry
+                              ? theme.own().primareyTextColor
+                              : entry?.tipoAcceso == EntryAccessType.ingreso
+                                  ? Colors.green
+                                  : entry?.tipoAcceso == EntryAccessType.salida
+                                      ? Colors.red
+                                      : theme.own().primareyTextColor,
+                          fontWeight: FontWeight.w600,
                         ),
                       ],
                     ),

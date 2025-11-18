@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:qr_scaner_manrique/BRACore/constants/constants-icons.dart';
+import 'package:qr_scaner_manrique/BRACore/enums/entrances_type.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/entrance.dart';
 import 'package:qr_scaner_manrique/BRACore/models/user_data.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/Texts/BRAText.dart';
@@ -39,30 +40,32 @@ class ParkingHomePage extends StatelessWidget {
                 ),
 
                 // Contenido principal
-                Column(
-                  children: [
-                    // Top bar personalizada
-                    _buildTopBar(controller, context),
-                    const SizedBox(height: 32),
-
-                    // Logo de la aplicación
-                    Image(
-                      image: AssetImage('assets/images/logo-dark.png'),
-                      width: 150,
-                    ),
-
-                    // Dropdown de selección de puerta
-                    _buildParkingGateSelector(controller, Theme.of(context)),
-                    const SizedBox(height: 48),
-
-                    // Opciones principales del parqueo
-                    _buildParkingOptions(controller, Theme.of(context)),
-                    const SizedBox(height: 48),
-
-                    // Botón de historial flotante
-                    _buildHistoryButton(controller),
-                    const SizedBox(height: 32),
-                  ],
+                SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // Top bar personalizada
+                      _buildTopBar(controller, context),
+                      const SizedBox(height: 24),
+                  
+                      // Logo de la aplicación
+                      Image(
+                        image: AssetImage('assets/images/logo-dark.png'),
+                        width: 150,
+                      ),
+                  
+                      // Dropdown de selección de puerta
+                      _buildParkingGateSelector(controller, Theme.of(context)),
+                      const SizedBox(height: 24),
+                  
+                      // Opciones principales del parqueo
+                      _buildParkingOptions(controller, Theme.of(context)),
+                      const SizedBox(height: 24),
+                  
+                      // Botón de historial flotante
+                      _buildHistoryButton(controller),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -201,6 +204,48 @@ class ParkingHomePage extends StatelessWidget {
                         fontWeight: FontWeight.w400,
                         color: Color(0xFF202023),
                       ),
+                      selectedItemBuilder: (context) {
+                        return controller.parkingEntrances.map((gate) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: gate.tipoIngreso == TypeDoor.entrance 
+                                    ? Colors.green.shade600 
+                                    : Colors.red.shade600,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: gate.tipoIngreso == TypeDoor.entrance 
+                                      ? Colors.green.shade800 
+                                      : Colors.red.shade800,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Icon(
+                                  gate.tipoIngreso == TypeDoor.entrance 
+                                    ? Icons.arrow_downward 
+                                    : Icons.arrow_upward,
+                                  color: Colors.white,
+                                  size: 8,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                gate.nombre ?? '',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xFF202023),
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList();
+                      },
                       onChanged: (GateDoor? newValue) {
                         if (newValue != null) {
                           controller.changeParkingGate(newValue);
@@ -210,7 +255,42 @@ class ParkingHomePage extends StatelessWidget {
                           .map<DropdownMenuItem<GateDoor>>((GateDoor gate) {
                         return DropdownMenuItem<GateDoor>(
                           value: gate,
-                          child: Text(gate.nombre ?? ''),
+                          child: Row(
+                            children: [
+                              Tooltip(
+                                message: gate.tipoIngreso == TypeDoor.entrance 
+                                  ? 'Puerta de Entrada' 
+                                  : 'Puerta de Salida',
+                                child: Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: gate.tipoIngreso == TypeDoor.entrance 
+                                      ? Colors.green.shade600 
+                                      : Colors.red.shade600,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: gate.tipoIngreso == TypeDoor.entrance 
+                                        ? Colors.green.shade800 
+                                        : Colors.red.shade800,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    gate.tipoIngreso == TypeDoor.entrance 
+                                      ? Icons.arrow_downward 
+                                      : Icons.arrow_upward,
+                                    color: Colors.white,
+                                    size: 8,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(gate.nombre ?? ''),
+                              ),
+                            ],
+                          ),
                         );
                       }).toList(),
                     ),
@@ -278,6 +358,19 @@ class ParkingHomePage extends StatelessWidget {
             onTap: controller.goToExit,
             theme: theme,
           ),
+
+          const SizedBox(height: 24),
+
+          // Buscar por placa
+          _buildOptionCard(
+            title: 'Buscar por placa',
+            subtitle: 'Con filtros de fecha',
+            iconColor: const Color(0xFF1976D2),
+            iconBackgroundColor: const Color(0xFFF5F5F5),
+            iconData: Icons.search,
+            onTap: controller.goToPlateSearch,
+            theme: theme,
+          ),
         ],
       ),
     );
@@ -285,6 +378,7 @@ class ParkingHomePage extends StatelessWidget {
 
   Widget _buildOptionCard({
     required String title,
+    String? subtitle,
     required Color iconBackgroundColor,
     required Color iconColor,
     required IconData iconData,
@@ -321,13 +415,27 @@ class ParkingHomePage extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-              // Título de la opción
+              // Título y subtítulo de la opción
               Expanded(
-                child: BRAText(
-                  text: title,
-                  size: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF231918),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    BRAText(
+                      text: title,
+                      size: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF231918),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      BRAText(
+                        text: subtitle,
+                        size: 12,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF8B8B8B),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],

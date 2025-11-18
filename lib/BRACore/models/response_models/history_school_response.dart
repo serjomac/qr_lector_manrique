@@ -32,6 +32,7 @@ class HistorySchoolResponse {
     String? estado;
     dynamic lista;
     String? nombreRetira;
+    String? nombreInvitado;
     String? cedulaRetira;
     String? placaRetira;
     List<dynamic>? imagenes;
@@ -65,6 +66,7 @@ class HistorySchoolResponse {
         this.lista,
         this.nombreRetira,
         this.cedulaRetira,
+        this.nombreInvitado,
         this.placaRetira,
         this.imagenes,
         this.fechaRetiro,
@@ -106,6 +108,7 @@ class HistorySchoolResponse {
         fechaModificacion: json["fecha_modificacion"],
         usuarioModificacion: json["usuario_modificacion"],
         issetBitfield: json["__isset_bitfield"],
+        nombreInvitado: json["nombre_invitado"] ?? json["nombre_invitacion"],
     );
 
     Map<String, dynamic> toJson() => {
@@ -139,5 +142,6 @@ class HistorySchoolResponse {
         "fecha_modificacion": fechaModificacion,
         "usuario_modificacion": usuarioModificacion,
         "__isset_bitfield": issetBitfield,
+        "nombre_invitado": nombreInvitado,
     };
 }

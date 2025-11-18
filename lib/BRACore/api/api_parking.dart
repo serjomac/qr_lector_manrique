@@ -84,6 +84,14 @@ class ApiParking {
     String? estado,
     String? placa,
     String? especial,
+    // Datos de cliente
+    String? tipoIdentificacion,
+    String? identificacion,
+    String? mailCliente,
+    String? telefono,
+    String? direccionCliente,
+    String? nombreCliente,
+    String? celular,
   }) async {
     try {
       // Crear FormData
@@ -98,6 +106,14 @@ class ApiParking {
         'estado': estado ?? 'VALIDO',
         'placa': placa ?? '',
         'especial': especial ?? 'S',
+        // Campos de formulario del cliente
+        'tipo_identificacion': tipoIdentificacion ?? '',
+        'identificacion': identificacion ?? '',
+        'mail_cliente': mailCliente ?? '',
+        'telefono': telefono ?? '',
+        'direccion_cliente': direccionCliente ?? '',
+        'nombre_cliente': nombreCliente ?? '',
+        'celular': celular ?? '',
       });
 
       // Agregar imágenes si existen
@@ -303,6 +319,35 @@ class ApiParking {
       ResponseErrorModel errorModel = ResponseErrorModel(
         codigoError: e.response?.statusCode ?? 0,
         mensaje: e.response?.data['mensaje'] ?? 'Error al obtener historial de parqueo',
+        causa: e.response?.data['causa'] ?? 'Unknown cause',
+      );
+      return Future.error(errorModel);
+    }
+  }
+
+  Future<List<ParrkingResponse>> getIngreso_placa({
+    required String placa,
+    required String idLugar,
+    required String fechaInicio,
+    required String fechaTermino,
+  }) async {
+    try {
+      final response = await _dio.post('/getIngreso_placa', data: {
+        'placa': placa,
+        'id_lugar': idLugar,
+        'fecha_inicio': fechaInicio,
+        'fecha_termino': fechaTermino,
+      });
+      log('getIngreso_placa response: ${json.encode(response.data)}');
+      
+      // Parse as array and return the full list
+      final res = parrkingResponseFromJson(json.encode(response.data));
+      return res;
+    } on DioError catch (e) {
+      log('Error in getIngreso_placa: ${e.toString()}');
+      ResponseErrorModel errorModel = ResponseErrorModel(
+        codigoError: e.response?.statusCode ?? 0,
+        mensaje: e.response?.data['mensaje'] ?? 'Error al buscar vehículo por placa',
         causa: e.response?.data['causa'] ?? 'Unknown cause',
       );
       return Future.error(errorModel);

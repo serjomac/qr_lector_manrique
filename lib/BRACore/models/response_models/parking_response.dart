@@ -156,6 +156,8 @@ class Ingreso {
     int? idSalidaVinculo;
     String? nombreLugar;
     int? issetBitfield;
+    String? valorPerdida;
+    String? especial;
 
     Ingreso({
         this.idIngreso,
@@ -205,6 +207,8 @@ class Ingreso {
         this.idSalidaVinculo,
         this.nombreLugar,
         this.issetBitfield,
+        this.valorPerdida,
+        this.especial,
     });
 
     factory Ingreso.fromJson(Map<String, dynamic> json) => Ingreso(
@@ -255,6 +259,8 @@ class Ingreso {
         idSalidaVinculo: json["id_salida_vinculo"],
         nombreLugar: json["nombre_lugar"],
         issetBitfield: json["__isset_bitfield"],
+        valorPerdida: json["valor_perdida"],
+        especial: json["especial"],
     );
 
     Map<String, dynamic> toJson() => {
@@ -305,5 +311,7 @@ class Ingreso {
         "id_salida_vinculo": idSalidaVinculo,
         "nombre_lugar": nombreLugar,
         "__isset_bitfield": issetBitfield,
+        "valor_perdida": valorPerdida,
+        "especial": especial,
     };
 }

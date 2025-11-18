@@ -18,6 +18,20 @@ import 'package:qr_scaner_manrique/shared/widgets/success_dialog.dart';
 
 class ApiBinnacle {
   final Dio _dio = DioClient().dio;
+  
+  // Cache configuration - configurable values
+  static const int _defaultCacheMinutes = 30; // Default: 30 minutes
+  static const bool _defaultEnableCache = true; // Default: cache enabled
+  
+  // Cache variables - stores residents data and timestamps per place
+  static final Map<String, List<ResidentResponse>> _residentsCache = {};
+  static final Map<String, DateTime> _cacheTimestamps = {};
+  
+  // Configuration getters with defaults
+  /// Get cache duration in minutes (default: 30 minutes)
+  static int get cacheMinutes => _defaultCacheMinutes;
+  /// Get whether cache is enabled by default (default: true)
+  static bool get enableCache => _defaultEnableCache;
 
   Future<void> addNormalEntrances({
     EntryTypeCode? entryTypeCode,
@@ -41,6 +55,7 @@ class ApiBinnacle {
     required String observation,
     required RegisterEntryType entranceType,
     required String placeId,
+    required String registerType,
   }) async {
     try {
       Map<String, dynamic> formDataMap = {
@@ -96,6 +111,7 @@ class ApiBinnacle {
       formDataMap['imagen_cedula'] = 'none';
       formDataMap['imagen_rostro'] = 'none';
       formDataMap['estado'] = 'I';
+      formDataMap['tipo?ingreso'] = registerType;
       if (carIdImageFrontI != null) {
         String carIdImageFrontIFileName = carIdImageFrontI.path.split('/').last;
         formDataMap['imagen_placa_delanteraI'] = await MultipartFile.fromFile(
@@ -142,19 +158,98 @@ class ApiBinnacle {
     }
   }
 
-  Future<List<ResidentResponse>> getAllResidentsByPlace(String placeId) async {
+  /// Get all residents by place with intelligent caching
+  /// 
+  /// [placeId] - The place ID to fetch residents for
+  /// [forceRefresh] - If true, ignores cache and fetches fresh data
+  /// [customCacheMinutes] - Override default cache time (default: 30 minutes)
+  /// [enableCacheControl] - Override cache enable/disable (default: true)
+  /// 
+  /// Examples:
+  /// ```dart
+  /// // Use default caching (30 minutes)
+  /// final residents = await apiBinnacle.getAllResidentsByPlace('123');
+  /// 
+  /// // Force refresh ignoring cache
+  /// final residents = await apiBinnacle.getAllResidentsByPlace('123', forceRefresh: true);
+  /// 
+  /// // Use custom cache time (60 minutes)
+  /// final residents = await apiBinnacle.getAllResidentsByPlace('123', customCacheMinutes: 60);
+  /// 
+  /// // Disable cache for this call
+  /// final residents = await apiBinnacle.getAllResidentsByPlace('123', enableCacheControl: false);
+  /// ```
+  Future<List<ResidentResponse>> getAllResidentsByPlace(
+    String placeId, {
+    bool forceRefresh = false,
+    int? customCacheMinutes,
+    bool? enableCacheControl,
+  }) async {
+    final bool shouldUseCache = enableCacheControl ?? enableCache;
+    final int cacheTime = customCacheMinutes ?? cacheMinutes;
+    
+    // Check if cache is enabled and if we should use cached data
+    if (shouldUseCache && !forceRefresh) {
+      final DateTime? lastFetch = _cacheTimestamps[placeId];
+      final List<ResidentResponse>? cachedData = _residentsCache[placeId];
+      
+      if (lastFetch != null && cachedData != null) {
+        final Duration timeDifference = DateTime.now().difference(lastFetch);
+        
+        // If less than configured minutes have passed, return cached data
+        if (timeDifference.inMinutes < cacheTime) {
+          log('Returning cached residents data for placeId: $placeId (cached ${timeDifference.inMinutes} minutes ago)');
+          return cachedData;
+        }
+      }
+    }
+    
     try {
+      log('Fetching fresh residents data from API for placeId: $placeId');
       Response resp = await _dio.post(
         '/getAllResidenteLugar_lugarA',
         data: {'id_lugar': placeId, 'estado': 'A'},
       );
       log(json.encode(resp.data));
       final responseMap = residentResponseFromJson(json.encode(resp.data));
+      
+      // Cache the response if cache is enabled
+      if (shouldUseCache) {
+        _residentsCache[placeId] = responseMap;
+        _cacheTimestamps[placeId] = DateTime.now();
+      }
+      
       return responseMap;
     } on DioError catch (e) {
       print(e.response.toString());
       return Future.error(e);
     }
+  }
+  
+  /// Clear cache for a specific place or all cached data
+  static void clearResidentsCache({String? placeId}) {
+    if (placeId != null) {
+      _residentsCache.remove(placeId);
+      _cacheTimestamps.remove(placeId);
+      log('Cleared residents cache for placeId: $placeId');
+    } else {
+      _residentsCache.clear();
+      _cacheTimestamps.clear();
+      log('Cleared all residents cache');
+    }
+  }
+  
+  /// Get cache status for a specific place
+  static Map<String, dynamic> getCacheStatus(String placeId) {
+    final DateTime? lastFetch = _cacheTimestamps[placeId];
+    final bool hasCache = _residentsCache.containsKey(placeId);
+    
+    return {
+      'hasCache': hasCache,
+      'lastFetch': lastFetch,
+      'minutesAgo': lastFetch != null ? DateTime.now().difference(lastFetch).inMinutes : null,
+      'isExpired': lastFetch != null ? DateTime.now().difference(lastFetch).inMinutes >= cacheMinutes : true,
+    };
   }
 
   Future<List<EntryResponse>> fetchAllEntries({
@@ -163,18 +258,26 @@ class ApiBinnacle {
     required DateTime endDate,
     required String placeId,
     required EntryTypeCode entryTypeCode,
+    String? idPuerta,
   }) async {
     try {
+      Map<String, dynamic> requestData = {
+        'id_lugar': placeId,
+        'fecha_inicio': startDate.toString(),
+        'fecha_termino': endDate.toString(),
+        'tipo_codigo': entryTypeCode.description
+      };
+      
+      // Add id_puerta if provided
+      if (idPuerta != null && idPuerta.isNotEmpty) {
+        requestData['id_puerta'] = idPuerta;
+      }
+      
       Response resp = await _dio.post(
         mainActionType == MainActionType.hisotric
             ? '/getAllIngreso'
             : '/getAllSalidas',
-        data: {
-          'id_lugar': placeId,
-          'fecha_inicio': startDate.toString(),
-          'fecha_termino': endDate.toString(),
-          'tipo_codigo': entryTypeCode.description
-        },
+        data: requestData,
         // data: {
         //   'id_lugar': '94',
         //   'fecha_inicio': '2024-01-17 22:05:29',

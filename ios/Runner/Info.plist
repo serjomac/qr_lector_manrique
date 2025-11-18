@@ -30,6 +30,8 @@
 	<string>Pinlet necesita acceder a tu cámara para tomar fotos de la cédula, placa y otras imágenes requeridas en el formulario de retiro</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Pinlet necesita acceder a tu galería para seleccionar fotos de la cédula, placa y otras imágenes requeridas en el formulario de retiro</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Pinlet necesita acceder a tus contactos para permitirte seleccionar un número de teléfono</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

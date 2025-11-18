@@ -39,7 +39,7 @@ class ExitRequestFormController extends GetxController {
   }
 
   // Computed properties
-  bool get isHistoricMode => mainActionType == MainActionType.historic;
+  bool get isHistoricMode => mainActionType == MainActionType.historic || mainActionType == MainActionType.hisotric;
   bool get isGateLeaveMode => mainActionType == MainActionType.gateLeave;
   
   final RxList<StudentData> students = <StudentData>[].obs;
@@ -89,7 +89,7 @@ class ExitRequestFormController extends GetxController {
   late FocusNode licensePlateFocus;
 
   // Current tab index
-  final RxInt currentTabIndex = 0.obs;
+  late final RxInt currentTabIndex;
 
   // SERVICE
   final ApiLector apiLector = ApiLector();
@@ -144,6 +144,10 @@ class ExitRequestFormController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    
+    // Initialize current tab index based on mainActionType
+    currentTabIndex = 1.obs;
+    
     // Initialize WithQR controllers
     reasonController = TextEditingController();
     representativeController = TextEditingController();
@@ -154,9 +158,9 @@ class ExitRequestFormController extends GetxController {
     guestNameController = TextEditingController();
     guestIdController = TextEditingController();
     guestPhoneController = TextEditingController();
-    pinletTypeController = TextEditingController(text: 'Recurrente');
-    primaryController = TextEditingController(text: 'SOLAR');
-    secondaryController = TextEditingController(text: '1');
+    pinletTypeController = TextEditingController(text: '');
+    primaryController = TextEditingController(text: '');
+    secondaryController = TextEditingController(text: '');
     plateController = TextEditingController();
     visitReasonController = TextEditingController();
 
@@ -182,12 +186,17 @@ class ExitRequestFormController extends GetxController {
         pendingRegisters != null) {
       // Populate from pendingRegisters for gateLeave action
       final dateFormatter = DateFormat('dd/MM/yyyy');
+      final isGroupedView = pendingRegisters!.length > 1; // More than one register indicates grouped view
+      
       students.value = pendingRegisters!.map((register) {
         // Create a more robust identification for pre-selection
         bool shouldBeSelected = false;
 
-        if (selectedPendingRegister != null) {
-          // Use multiple fields for more reliable comparison
+        if (isGroupedView) {
+          // When grouped view, pre-select all students
+          shouldBeSelected = true;
+        } else if (selectedPendingRegister != null) {
+          // When single register view, use comparison logic
           final sameIdHijo = register.idHijo == selectedPendingRegister!.idHijo;
           final sameIdHijoResidente = register.idHijoResidente == selectedPendingRegister!.idHijoResidente;
           final sameName = register.nombreHijo == selectedPendingRegister!.nombreHijo;
@@ -198,6 +207,7 @@ class ExitRequestFormController extends GetxController {
         return StudentData(
           idChild: register.idHijo.toString(),
           name: register.nombreHijo ?? 'Nombre no disponible',
+          estadoStaudent: register.estado ?? '',
           representativeName:
               '${register.nombresResidente ?? ''} ${register.apellidosResidente ?? ''}'
                   .trim(),
@@ -214,31 +224,34 @@ class ExitRequestFormController extends GetxController {
 
       // Use selectedPendingRegister data for WithoutQR form fields when available
       if (selectedPendingRegister != null) {
-        // Fill WithoutQR form controllers with pending register data
+        // Fill Information tab with resident data
+        representativeController.text =
+            '${selectedPendingRegister!.nombresResidente ?? ''} ${selectedPendingRegister!.apellidosResidente ?? ''}'
+                .trim();
+        phoneController.text = selectedPendingRegister!.celularResidente ?? '';
+        primaryController.text = selectedPendingRegister!.nombrePrimario ?? '';
+        secondaryController.text = selectedPendingRegister!.nombreSecundario ?? '';
+        
+        // Fill WithoutQR form controllers with pending register data (for gateLeave mode)
         guestNameController.text = selectedPendingRegister!.nombreRetira ?? '';
         guestIdController.text = selectedPendingRegister!.cedulaRetira ?? '';
         guestPhoneController.text = selectedPendingRegister!.celularResidente ?? '';
         plateController.text = selectedPendingRegister!.placaRetira ?? '';
         visitReasonController.text = selectedPendingRegister!.descripcion ?? '';
         
-        // Keep existing pinlet and location data
-        pinletTypeController.text = selectedPendingRegister!.tipo?.value ?? 'Recurrente';
-        primaryController.text = selectedPendingRegister!.nombrePrimario ?? 'SOLAR';
-        secondaryController.text = selectedPendingRegister!.nombreSecundario ?? '1';
+        // Keep existing pinlet type
+        pinletTypeController.text = selectedPendingRegister!.tipo?.schoolType ?? 'Recurrente';
         
-        // Also fill WithQR form controllers for consistency
-        representativeController.text =
-            '${selectedPendingRegister!.nombresResidente ?? ''} ${selectedPendingRegister!.apellidosResidente ?? ''}'
-                .trim();
-        phoneController.text = selectedPendingRegister!.celularResidente ?? '';
-        reasonController.text = selectedPendingRegister!.descripcion ?? '';
-        dateTimeController.text =
-            selectedPendingRegister!.fechaCreacion?.toIso8601String() ?? '';
-            
-        // Fill DetailView form controllers with pending register data
+        // Fill DetailView form controllers with withdrawal data
         nameController.text = selectedPendingRegister!.nombreRetira ?? '';
         idController.text = selectedPendingRegister!.cedulaRetira ?? '';
         licensePlateController.text = selectedPendingRegister!.placaRetira ?? '';
+        reasonController.text = selectedPendingRegister!.descripcion ?? '';
+        
+        // Format date for display if available
+        if (selectedPendingRegister!.fechaRetiro != null) {
+          dateTimeController.text = selectedPendingRegister!.fechaRetiro.toString();
+        }
       } else if (pendingRegisters!.isNotEmpty) {
         // Fallback to first register if no specific selection
         final firstRegister = pendingRegisters!.first;
@@ -255,9 +268,9 @@ class ExitRequestFormController extends GetxController {
         reasonController.text = firstRegister.descripcion ?? '';
         dateTimeController.text =
             firstRegister.fechaCreacion?.toIso8601String() ?? '';
-        pinletTypeController.text = firstRegister.tipo?.value ?? 'Recurrente';
-        primaryController.text = firstRegister.nombrePrimario ?? 'SOLAR';
-        secondaryController.text = firstRegister.nombreSecundario ?? '1';
+        pinletTypeController.text = firstRegister.tipo?.schoolType ?? '';
+        primaryController.text = firstRegister.nombrePrimario ?? '';
+        secondaryController.text = firstRegister.nombreSecundario ?? '';
         
         // Fill DetailView form controllers with first register data
         nameController.text = firstRegister.nombreRetira ?? '';
@@ -266,48 +279,92 @@ class ExitRequestFormController extends GetxController {
       }
     } else {
       // Original logic for gateEntryForm action
-      // Populate controllers with residentChildsResponse data
-      guestNameController.text = residentChildsResponse.informacion?.nombreVisitante ?? '';
+      // If selectedPendingRegister is available (from historic), use it; otherwise use residentChildsResponse
+      if (isHistoricMode && selectedPendingRegister != null) {
+        // Populate Information tab with resident data from residentChildsResponse
+        representativeController.text =
+            '${selectedPendingRegister!.nombresResidente ?? ''} ${selectedPendingRegister!.apellidosResidente ?? ''}'
+                .trim();
+        phoneController.text = selectedPendingRegister!.celularResidente ?? '';
+        primaryController.text = selectedPendingRegister!.nombrePrimario ?? '';
+        secondaryController.text = selectedPendingRegister!.nombreSecundario ?? '';
+        pinletTypeController.text = selectedPendingRegister!.tipo?.schoolType ?? '';
+        
+        // Populate guest information
+        guestNameController.text = selectedPendingRegister!.nameInvitation ?? '';
+        guestIdController.text = selectedPendingRegister!.cedulaRetira ?? '';
+        guestPhoneController.text = selectedPendingRegister!.celularResidente ?? '';
+        plateController.text = selectedPendingRegister!.placaRetira ?? '';
+        visitReasonController.text = selectedPendingRegister!.descripcion ?? '';
+        
+        // Populate Detail tab fields with withdrawal data
+        nameController.text = selectedPendingRegister!.nombreRetira ?? '';
+        idController.text = selectedPendingRegister!.cedulaRetira ?? '';
+        licensePlateController.text = selectedPendingRegister!.placaRetira ?? '';
+        reasonController.text = selectedPendingRegister!.descripcion ?? '';
+        
+        // Format date for display if available
+        if (selectedPendingRegister!.fechaRetiro != null) {
+          dateTimeController.text = selectedPendingRegister!.fechaRetiro.toString();
+        } else if (selectedPendingRegister!.fechaCreacion != null) {
+          final DateFormat formatter = DateFormat('dd/MM/yyyy HH:mm');
+          dateTimeController.text = formatter.format(selectedPendingRegister!.fechaCreacion!);
+        }
+      } else {
+        // Use residentChildsResponse data
+        guestNameController.text = residentChildsResponse.informacion?.nombreVisitante ?? '';
         guestIdController.text = residentChildsResponse.informacion?.cedulaVisitante ?? '';
         guestPhoneController.text = residentChildsResponse.informacion?.celularVisitante ?? '';
 
-      representativeController.text =
-          "${residentChildsResponse.nombresResidente?.getLastNameResp} ${residentChildsResponse.apellidosResidente}";
-      phoneController.text = residentChildsResponse.celularResidente ?? '';
-      pinletTypeController.text =
-          residentChildsResponse.informacion?.tipoCodigo?.value ?? '';
-      primaryController.text =
-          residentChildsResponse.informacion?.primarioResidente ?? 'SOLAR';
-      secondaryController.text =
-          residentChildsResponse.informacion?.secundarioResidente ?? '1';
-      reasonController.text = residentChildsResponse.descripcion ?? '';
-      dateTimeController.text =
-          residentChildsResponse.fechaCreacion?.toIso8601String() ?? '';
+        representativeController.text =
+            "${residentChildsResponse.nombresResidente?.getLastNameResp} ${residentChildsResponse.apellidosResidente}";
+        phoneController.text = residentChildsResponse.celularResidente ?? '';
+        pinletTypeController.text =
+            residentChildsResponse.informacion?.tipoCodigo?.schoolType ?? '';
+        primaryController.text =
+            residentChildsResponse.informacion?.primarioResidente ?? '';
+        secondaryController.text =
+            residentChildsResponse.informacion?.secundarioResidente ?? '';
+        reasonController.text = residentChildsResponse.descripcion ?? '';
+        dateTimeController.text =
+            residentChildsResponse.fechaCreacion?.toIso8601String() ?? '';
 
-      // For historic mode, populate detail tab fields with available information
-      if (isHistoricMode) {
-        // Use direct fields from ResidentChildsResponse instead of informacion
-        if (residentChildsResponse.nombreRetira != null && residentChildsResponse.nombreRetira!.isNotEmpty) {
-          nameController.text = residentChildsResponse.nombreRetira!;
-        }
-        
-        if (residentChildsResponse.cedulaRetira != null && residentChildsResponse.cedulaRetira!.isNotEmpty) {
-          idController.text = residentChildsResponse.cedulaRetira!;
-        }
-        
-        if (residentChildsResponse.placaRetira != null && residentChildsResponse.placaRetira!.isNotEmpty) {
-          licensePlateController.text = residentChildsResponse.placaRetira!;
-        }
-        
-        // Populate reason field with description if available
-        if (residentChildsResponse.descripcion != null && residentChildsResponse.descripcion!.isNotEmpty) {
-          reasonController.text = residentChildsResponse.descripcion!;
-        }
-        
-        // Populate date/time field with creation date formatted nicely
-        if (residentChildsResponse.fechaCreacion != null) {
-          final DateFormat formatter = DateFormat('dd/MM/yyyy HH:mm');
-          dateTimeController.text = formatter.format(residentChildsResponse.fechaCreacion!);
+        // For historic mode, populate detail tab fields with available information
+        if (isHistoricMode) {
+          // Use direct fields from ResidentChildsResponse instead of informacion
+          if (residentChildsResponse.nombreRetira != null && residentChildsResponse.nombreRetira!.isNotEmpty) {
+            nameController.text = residentChildsResponse.nombreRetira!;
+          }
+          
+          if (residentChildsResponse.cedulaRetira != null && residentChildsResponse.cedulaRetira!.isNotEmpty) {
+            idController.text = residentChildsResponse.cedulaRetira!;
+          }
+          
+          if (residentChildsResponse.placaRetira != null && residentChildsResponse.placaRetira!.isNotEmpty) {
+            licensePlateController.text = residentChildsResponse.placaRetira!;
+          }
+          
+          // Populate reason field with description if available
+          if (residentChildsResponse.descripcion != null && residentChildsResponse.descripcion!.isNotEmpty) {
+            reasonController.text = residentChildsResponse.descripcion!;
+          }
+          
+          // Populate guest fields with direct fields if available
+          if (residentChildsResponse.nombreRetira != null && residentChildsResponse.nombreRetira!.isNotEmpty) {
+            guestNameController.text = residentChildsResponse.nombreRetira!;
+          }
+          if (residentChildsResponse.cedulaRetira != null && residentChildsResponse.cedulaRetira!.isNotEmpty) {
+            guestIdController.text = residentChildsResponse.cedulaRetira!;
+          }
+          if (residentChildsResponse.placaRetira != null && residentChildsResponse.placaRetira!.isNotEmpty) {
+            plateController.text = residentChildsResponse.placaRetira!;
+          }
+          
+          // Populate date/time field with creation date formatted nicely
+          if (residentChildsResponse.fechaCreacion != null) {
+            final DateFormat formatter = DateFormat('dd/MM/yyyy HH:mm');
+            dateTimeController.text = formatter.format(residentChildsResponse.fechaCreacion!);
+          }
         }
       }
 
@@ -321,6 +378,7 @@ class ExitRequestFormController extends GetxController {
                   representativeName: residentChildsResponse.nombresResidente ??
                       'Representante no disponible',
                   course: hijo.nombreCategoria ?? 'Curso no disponible',
+                  estadoStaudent: hijo.estado ?? '',
                   date: residentChildsResponse.fechaCreacion != null
                       ? dateFormatter
                           .format(residentChildsResponse.fechaCreacion!)
@@ -345,20 +403,35 @@ class ExitRequestFormController extends GetxController {
   void toggleSelectAll() {
     selectAll.value = !selectAll.value;
     for (var student in students) {
-      student.isSelected = selectAll.value;
+      // Allow selection only for:
+      // - Students with status 'P' when mainActionType is gateLeave
+      // - Students with status 'A' (active)
+      final isSelectable = (student.estadoStaudent == "P" && mainActionType == MainActionType.gateLeave) || student.estadoStaudent == "A";
+      if (isSelectable) {
+        student.isSelected = selectAll.value;
+      }
     }
     students.refresh();
+    _updateSelectAllState();
   }
 
   void toggleStudentSelection(int index) {
-    students[index].isSelected = !students[index].isSelected;
-    selectAll.value = students.every((student) => student.isSelected);
-    students.refresh();
+    // Allow selection only for:
+    // - Students with status 'P' when mainActionType is gateLeave
+    // - Students with status 'A' (active)
+    final isSelectable = (students[index].estadoStaudent == "P" && mainActionType == MainActionType.gateLeave) || students[index].estadoStaudent == "A";
+    if (isSelectable) {
+      students[index].isSelected = !students[index].isSelected;
+      _updateSelectAllState();
+      students.refresh();
+    }
   }
 
   void _updateSelectAllState() {
-    selectAll.value =
-        students.isNotEmpty && students.every((student) => student.isSelected);
+    final selectableStudents = students.where((student) => 
+      (student.estadoStaudent == "P" && mainActionType == MainActionType.gateLeave) || student.estadoStaudent == "A"
+    );
+    selectAll.value = selectableStudents.isNotEmpty && selectableStudents.every((student) => student.isSelected);
   }
 
   // Validation methods
@@ -384,6 +457,14 @@ class ExitRequestFormController extends GetxController {
   }
 
   void populatePhotos() {
+    // Priority: selectedPendingRegister for historic mode, then residentChildsResponse
+    if (isHistoricMode && selectedPendingRegister != null) {
+      // For historic mode with selectedPendingRegister, we don't set credential/profile images
+      // as they are not part of the pending register model
+      // Images will be shown in the Detail tab instead
+      return;
+    }
+    
     if (residentChildsResponse.informacion != null) {
       if (residentChildsResponse.informacion!.fotoCredencial != null) {
         credentialUrlImage?.value =
@@ -588,6 +669,7 @@ class StudentData {
   final String representativeName;
   final String course;
   final String date;
+  final String estadoStaudent;
   bool isSelected;
 
   StudentData({
@@ -595,6 +677,7 @@ class StudentData {
     required this.name,
     required this.representativeName,
     required this.course,
+    required this.estadoStaudent,
     required this.date,
     this.isSelected = false,
   });

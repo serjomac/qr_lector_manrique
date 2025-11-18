@@ -41,6 +41,7 @@ class PendingSchoolRegisterResponse {
     dynamic fechaModificacion;
     dynamic usuarioModificacion;
     int? issetBitfield;
+    String? nameInvitation;
 
     PendingSchoolRegisterResponse({
         this.idHijo,
@@ -73,6 +74,7 @@ class PendingSchoolRegisterResponse {
         this.fechaModificacion,
         this.usuarioModificacion,
         this.issetBitfield,
+        this.nameInvitation,
     });
 
     factory PendingSchoolRegisterResponse.fromJson(Map<String, dynamic> json) => PendingSchoolRegisterResponse(
@@ -106,6 +108,7 @@ class PendingSchoolRegisterResponse {
         fechaModificacion: json["fecha_modificacion"],
         usuarioModificacion: json["usuario_modificacion"],
         issetBitfield: json["__isset_bitfield"],
+        nameInvitation: json["nombre_invitacion"],
     );
 
     Map<String, dynamic> toJson() => {
@@ -139,5 +142,6 @@ class PendingSchoolRegisterResponse {
         "fecha_modificacion": fechaModificacion,
         "usuario_modificacion": usuarioModificacion,
         "__isset_bitfield": issetBitfield,
+        "nombre_invitacion": nameInvitation,
     };
 }

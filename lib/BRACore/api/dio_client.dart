@@ -5,7 +5,7 @@ class DioClient {
   final Dio _dio = Dio();
   DioClient() {
     _dio.options
-      ..baseUrl = 'http://34.27.124.191/apiRest6/corp/v1'
+      ..baseUrl = 'https://pinlet.app/apiRest6/corp/v1'
       ..connectTimeout = 8000
       ..receiveTimeout = 8000;
     _dio.interceptors.add(AppInterceptors());

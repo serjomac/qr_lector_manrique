@@ -195,6 +195,8 @@ class PendingSchoolRegisterPage extends StatelessWidget {
                       final childrenCount =
                           controller.getChildrenCount(register);
 
+                      final hasNameInvitation = isGroupedView && register.nameInvitation != null && register.nameInvitation!.isNotEmpty;
+
                       return GestureDetector(
                         onTap: () async {
                           List<PendingSchoolRegisterResponse> registersToSend;
@@ -224,7 +226,7 @@ class PendingSchoolRegisterPage extends StatelessWidget {
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 20),
-                          height: 93,
+                          height: (hasNameInvitation || (register.nombreRetira != null && register.nombreRetira!.isNotEmpty && register.nombreRetira != '${register.nombresResidente} ${register.apellidosResidente}')) ? 110 : 93,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -279,7 +281,11 @@ class PendingSchoolRegisterPage extends StatelessWidget {
                                 top: 36,
                                 child: BRAText(
                                   text: isGroupedView
-                                      ? '${register.nombresResidente!.getFirstName} ${register.apellidosResidente}'
+                                      ? (register.tipo == EntryTypeCode.IR || register.tipo == EntryTypeCode.IO || register.tipo == EntryTypeCode.RE
+                                          ? (register.nameInvitation != null && register.nameInvitation!.isNotEmpty
+                                              ? register.nameInvitation!
+                                              : '${register.nombresResidente!.getFirstName} ${register.apellidosResidente}')
+                                          : '${register.nombresResidente!.getFirstName} ${register.apellidosResidente}')
                                       : register.nombreHijo ?? '',
                                   size: 16,
                                   fontWeight: FontWeight.w600,
@@ -291,14 +297,33 @@ class PendingSchoolRegisterPage extends StatelessWidget {
                               Positioned(
                                 left: 58,
                                 top: 64.5,
-                                child: BRAText(
-                                  text: isGroupedView
-                                      ? 'Cédula: ${register.cedulaResidente ?? ''}'
-                                      : register.nombresResidente ?? '',
-                                  size: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF202023),
-                                ),
+                                child: isGroupedView
+                                    ? Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          if (register.nombreRetira != null && register.nombreRetira!.isNotEmpty && register.nombreRetira != '${register.nombresResidente} ${register.apellidosResidente}') ...[
+                                            BRAText(
+                                              text: 'Retira: ${register.nombreRetira!.getFirstName} ${register.nombreRetira!.getLastNameResp}',
+                                              size: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF202023),
+                                            ),
+                                            const SizedBox(height: 2),
+                                          ],
+                                          BRAText(
+                                            text: 'Cédula: ${register.cedulaResidente ?? ''}',
+                                            size: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF202023),
+                                          ),
+                                        ],
+                                      )
+                                    : BRAText(
+                                        text: register.nombresResidente ?? '',
+                                        size: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF202023),
+                                      ),
                               ),
 
                               // Status badge

@@ -11,6 +11,7 @@ import 'package:qr_scaner_manrique/pages/school/exit_without_qr_request_form/exi
 import 'representative_selection_controller.dart';
 import 'package:qr_scaner_manrique/shared/loadings_pages/loading_invitations_page.dart'
     as shared_loading;
+import 'package:qr_scaner_manrique/shared/widgets/success_dialog.dart';
 
 class RepresentativeSelectionPage extends StatelessWidget {
   final RegistrationType registrationType;
@@ -145,6 +146,46 @@ class RepresentativeSelectionPage extends StatelessWidget {
                                       onTap: () async {
                                         // Clear search and close keyboard when selecting
                                         _.onRepresentativeSelected();
+                                        
+                                        // Check if representative has no children assigned
+                                        if (representative.childrens == null || representative.childrens!.isEmpty) {
+                                          showDialog(
+                                            context: Get.overlayContext!,
+                                            builder: (c) {
+                                              return SuccessDialog(
+                                                title: 'Sin hijos asignados',
+                                                subtitle: 'No tiene hijos asignados',
+                                                iconSvg: 'assets/icons/alert_icon.svg',
+                                                onTapAcept: () {
+                                                  Get.back();
+                                                },
+                                              );
+                                            },
+                                          );
+                                          return;
+                                        }
+                                        
+                                        // Check if all children have status 'I' or 'P' (withdrawn or pending withdrawal)
+                                        final hasAvailableChildren = representative.childrens?.any(
+                                          (child) => child.estado != 'I' && child.estado != 'P'
+                                        ) ?? false;
+                                        
+                                        if (!hasAvailableChildren) {
+                                          showDialog(
+                                            context: Get.overlayContext!,
+                                            builder: (c) {
+                                              return SuccessDialog(
+                                                title: 'Sin hijos disponibles',
+                                                subtitle: 'No tienen ningún hijo para retirar',
+                                                iconSvg: 'assets/icons/alert_icon.svg',
+                                                onTapAcept: () {
+                                                  Get.back();
+                                                },
+                                              );
+                                            },
+                                          );
+                                          return;
+                                        }
                                         
                                         final res = await Get.to(() =>
                                             ExitWithoutQrToSchoolRequestFormPage(

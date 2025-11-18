@@ -115,4 +115,19 @@ class ApiAuth {
       return Future.error(e);
     }
   }
+
+  Future<void> logoutSession(String idUsuarioAdmin) async {
+    try {
+      await _dio.post(
+        '/cerrar_sesionAdmin',
+        data: {
+          'id_usuario_admin': idUsuarioAdmin,
+          'usuario_modificacion': 'app',
+        },
+      );
+    } on DioError catch (e) {
+      // Continuamos con el logout aunque falle el API
+      print('Error en logout API: ${e.toString()}');
+    }
+  }
 }

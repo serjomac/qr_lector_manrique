@@ -8,17 +8,19 @@ import 'package:qr_scaner_manrique/BRAUXComponents/Texts/BRAText.dart';
 import 'package:qr_scaner_manrique/shared/loadings_pages/loading_invitations_page.dart';
 import 'parking_date_range_bottom_sheet.dart';
 import 'vehicles_list_controller.dart';
+import 'package:qr_scaner_manrique/pages/parking/type_parking_register/parking_validation_type.dart';
 
 class VehiclesListPage extends StatelessWidget {
   final String? doorId;
   final MainParkingEntry mainParkingEntry;
+  final ParkingValidationType validationType;
   
-  const VehiclesListPage({Key? key, this.doorId, this.mainParkingEntry = MainParkingEntry.validation}) : super(key: key);
+  const VehiclesListPage({Key? key, this.doorId, this.mainParkingEntry = MainParkingEntry.validation, required this.validationType}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GetBuilder<VehiclesValidationListController>(
-      init: VehiclesValidationListController(doorId: doorId, mainParkingEntry: mainParkingEntry),
+  init: VehiclesValidationListController(doorId: doorId, mainParkingEntry: mainParkingEntry, validationType: validationType),
       builder: (controller) {
         return Scaffold(
           backgroundColor: Colors.white,
@@ -33,6 +35,8 @@ class VehiclesListPage extends StatelessWidget {
                 ),
                 // Search field
                 _buildSearchField(controller),
+                // Status chips filter
+                _buildStatusChipsFilter(controller),
                 // Vehicle list or loading
                 Obx(
                   () => controller.isLoading.value 
@@ -175,6 +179,175 @@ class VehiclesListPage extends StatelessWidget {
     );
   }
 
+  Widget _buildStatusChipsFilter(VehiclesValidationListController controller) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label
+          BRAText(
+            text: 'Filtrar por estado',
+            size: 12,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF5B5856),
+          ),
+          const SizedBox(height: 8),
+          // Chips list
+          SizedBox(
+            height: 40,
+            child: GetBuilder<VehiclesValidationListController>(
+              builder: (controller) {
+                final statusCounts = controller.getStatusCounts();
+                final allStatuses = statusCounts.keys.toSet();
+                
+                return ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    // "Todos" chip
+                    _buildStatusChip(
+                      label: 'Todos',
+                      count: controller.vehicleEntries.length,
+                      isSelected: controller.selectedStatusFilter == null,
+                      onTap: () => controller.onStatusFilterTap(null),
+                      backgroundColor: Colors.grey[100]!,
+                      textColor: const Color(0xFF5B5856),
+                      borderColor: Colors.grey[300]!,
+                    ),
+                    const SizedBox(width: 8),
+                    // Status chips
+                    ...allStatuses.map((status) {
+                      final count = statusCounts[status] ?? 0;
+                      final displayLabel = _getStatusDisplayLabel(status);
+                      final colors = _getStatusColors(status);
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _buildStatusChip(
+                          label: displayLabel,
+                          count: count,
+                          isSelected: controller.selectedStatusFilter?.toLowerCase() == status.toLowerCase(),
+                          onTap: () => controller.onStatusFilterTap(status),
+                          backgroundColor: colors['backgroundColor']!,
+                          textColor: colors['textColor']!,
+                          borderColor: colors['borderColor']!,
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip({
+    required String label,
+    required int count,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required Color backgroundColor,
+    required Color textColor,
+    required Color borderColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? backgroundColor : backgroundColor.withOpacity(0.3),
+          border: Border.all(
+            color: isSelected ? borderColor : borderColor.withOpacity(0.5),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            BRAText(
+              text: label,
+              size: 12,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected ? textColor : textColor.withOpacity(0.8),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected ? textColor.withOpacity(0.2) : textColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: BRAText(
+                text: count.toString(),
+                size: 10,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? textColor : textColor.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getStatusDisplayLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'valido':
+      case 'validado':
+        return 'VÁLIDO';
+      case 'ingreso':
+      case 'ingresado':
+        return 'INGRESO';
+      case 'retirado':
+        return 'RETIRADO';
+      case 'caducado':
+        return 'CADUCADO';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
+  Map<String, Color> _getStatusColors(String status) {
+    switch (status.toLowerCase()) {
+      case 'valido':
+      case 'validado':
+        return {
+          'backgroundColor': const Color(0xFFCFF9E6),
+          'textColor': const Color(0xFF036546),
+          'borderColor': const Color(0xFF036546),
+        };
+      case 'ingreso':
+      case 'ingresado':
+        return {
+          'backgroundColor': const Color(0xFFCDE7FE),
+          'textColor': const Color(0xFF084F9C),
+          'borderColor': const Color(0xFF084F9C),
+        };
+      case 'retirado':
+        return {
+          'backgroundColor': const Color(0xFFFEEFC8),
+          'textColor': const Color(0xFFB86E00),
+          'borderColor': const Color(0xFFB86E00),
+        };
+      case 'caducado':
+        return {
+          'backgroundColor': const Color(0xFFFEC8C8),
+          'textColor': const Color(0xFFA10101),
+          'borderColor': const Color(0xFFA10101),
+        };
+      default:
+        return {
+          'backgroundColor': Colors.grey[100]!,
+          'textColor': const Color(0xFF5B5856),
+          'borderColor': Colors.grey[300]!,
+        };
+    }
+  }
+
   Widget _buildVehicleList(VehiclesValidationListController controller) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -228,7 +401,7 @@ class VehiclesListPage extends StatelessWidget {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 15),
                     child: _buildVehicleCard(entry, index, () {
-                      controller.onVehicleCardTap(entry);
+                      controller.onVehicleCardTap(entry, index);
                     }, controller),
                   );
                 },
@@ -243,7 +416,6 @@ class VehiclesListPage extends StatelessWidget {
       child: GetBuilder<VehiclesValidationListController>(
         init: controller,
         builder: (_) {
-          final bool isLoading = controller.selectedEntryIndex == index && controller.isCardLoading.value;
           
           return Container(
           height: 123,
@@ -306,9 +478,11 @@ class VehiclesListPage extends StatelessWidget {
                 child: _buildAccumulatedTime(entry),
               ),
               
-              // Loading overlay
-              if (isLoading)
-                Positioned.fill(
+              // Loading overlay usando RxBool + Obx
+              Obx(() {
+                final show = (controller.selectedEntryIndex.value == index) && controller.isCardLoading.value;
+                if (!show) return const SizedBox.shrink();
+                return Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.3),
@@ -321,7 +495,8 @@ class VehiclesListPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                ),
+                );
+              }),
             ],
           ),
         );

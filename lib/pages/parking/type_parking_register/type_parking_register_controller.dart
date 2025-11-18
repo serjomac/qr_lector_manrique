@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+// No Flutter Material imports needed here
 import 'package:get/get.dart';
 import 'package:qr_scaner_manrique/BRACore/api/api_parking.dart';
 import 'package:qr_scaner_manrique/BRACore/api/api_lector.dart';
@@ -10,12 +10,7 @@ import 'package:qr_scaner_manrique/pages/qr_scanner/ui/scan_camera.dart';
 import 'package:qr_scaner_manrique/pages/parking/type_parking_register/search_code_modal.dart';
 import 'package:qr_scaner_manrique/pages/parking/register_parking/manual/manual_parking_register_page.dart';
 import 'package:qr_scaner_manrique/pages/entrance_form/add_entry_form_page.dart';
-
-enum ParkingValidationType {
-  qr,
-  search,
-  manual,
-}
+import 'package:qr_scaner_manrique/pages/parking/type_parking_register/parking_validation_type.dart';
 
 class TypeParkingRegisterController extends GetxController {
   // Door ID parameter
@@ -133,6 +128,7 @@ class TypeParkingRegisterController extends GetxController {
           Get.to(() => ValidateParkingPage(
                 vehicleData: vehicleData,
                 mainParkingEntry: mainParkingEntry,
+                validationType: ParkingValidationType.qr,
               ));
         }
       }
@@ -179,6 +175,7 @@ class TypeParkingRegisterController extends GetxController {
       Get.to(() => ValidateParkingPage(
         vehicleData: vehicleData,
         mainParkingEntry: mainParkingEntry,
+        validationType: ParkingValidationType.search,
       ));
 
     } catch (e) {
@@ -202,7 +199,7 @@ class TypeParkingRegisterController extends GetxController {
       case MainParkingEntry.exit:
       default:
         // Para validación y salida, navegar a lista de vehículos
-        Get.to(() => VehiclesListPage(doorId: doorId, mainParkingEntry: mainParkingEntry));
+  Get.to(() => VehiclesListPage(doorId: doorId, mainParkingEntry: mainParkingEntry, validationType: ParkingValidationType.manual));
         print('Navegando a lista de vehículos para validación/salida');
         break;
     }

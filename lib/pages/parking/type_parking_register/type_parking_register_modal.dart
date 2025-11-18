@@ -5,6 +5,7 @@ import 'package:qr_scaner_manrique/BRACore/constants/constants-icons.dart';
 import 'package:qr_scaner_manrique/BRACore/enums/main_parking_entry.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/Texts/BRAText.dart';
 import 'package:qr_scaner_manrique/pages/parking/type_parking_register/type_parking_register_controller.dart';
+import 'package:qr_scaner_manrique/pages/parking/type_parking_register/parking_validation_type.dart';
 
 class TypeParkingRegisterModal extends StatelessWidget {
   final String? doorId;

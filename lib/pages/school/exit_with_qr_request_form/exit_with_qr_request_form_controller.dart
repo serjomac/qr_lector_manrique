@@ -2,15 +2,15 @@ import 'package:get/get.dart';
 
 class ExitWithQrRequestFormController extends GetxController {
   // Observable variables
-  final RxString selectedType = 'Recurrente'.obs;
-  final RxString resident = 'Martha Delgado'.obs;
-  final RxString primary = 'SOLAR'.obs;
-  final RxString secondary = '1'.obs;
-  final RxString guestName = 'David Macías'.obs;
-  final RxString guestId = '0991845498'.obs;
-  final RxString guestPhone = '0981234567'.obs;
-  final RxString licensePlate = 'GRV0651'.obs;
-  final RxString reason = 'Visitar'.obs;
+  final RxString selectedType = ''.obs;
+  final RxString resident = ''.obs;
+  final RxString primary = ''.obs;
+  final RxString secondary = ''.obs;
+  final RxString guestName = ''.obs;
+  final RxString guestId = ''.obs;
+  final RxString guestPhone = ''.obs;
+  final RxString licensePlate = ''.obs;
+  final RxString reason = ''.obs;
 
   // Current step
   final RxInt currentStep = 0.obs;

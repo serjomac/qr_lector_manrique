@@ -7,6 +7,7 @@ import 'package:qr_scaner_manrique/BRACore/models/user_data.dart';
 import 'package:qr_scaner_manrique/pages/parking/validate_parking/validate_parking_page.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_scaner_manrique/utils/AppLocations.dart';
+import 'package:qr_scaner_manrique/pages/parking/type_parking_register/parking_validation_type.dart';
 
 // Clase para filtros de fecha
 class FilterLastDay {
@@ -27,7 +28,7 @@ class VehiclesValidationListController extends GetxController {
 
   // Constructor
   VehiclesValidationListController(
-      {this.doorId, this.mainParkingEntry = MainParkingEntry.validation});
+    {this.doorId, this.mainParkingEntry = MainParkingEntry.validation, required this.validationType});
 
   // Loading state
   final RxBool isLoading = false.obs;
@@ -39,6 +40,12 @@ class VehiclesValidationListController extends GetxController {
   // Vehicle entries from API
   List<ParrkingResponse> vehicleEntries = [];
   List<ParrkingResponse> filteredVehicleEntries = [];
+
+  // Validation type (qr, search, manual) to determine 'especial'
+  final ParkingValidationType validationType;
+
+  // Status filter property
+  String? selectedStatusFilter;
 
   // Date filtering properties
   DateTime startDate = DateTime.now().subtract(const Duration(days: 1));
@@ -73,7 +80,8 @@ class VehiclesValidationListController extends GetxController {
     return '${formatter.format(startDate)} - ${formatter.format(endDate)}';
   }
 
-  int? selectedEntryIndex;
+  // Índice del item seleccionado (reactivo para usar con Obx)
+  final Rxn<int> selectedEntryIndex = Rxn<int>();
 
   @override
   void onInit() {
@@ -149,6 +157,9 @@ class VehiclesValidationListController extends GetxController {
 
       // Update filtered entries
       filteredVehicleEntries = List.from(vehicleEntries);
+      
+      // Apply any existing filters
+      _applyFilters();
     } catch (e) {
       print('Error loading vehicle entries: $e');
       // Clear entries on error
@@ -211,15 +222,50 @@ class VehiclesValidationListController extends GetxController {
   }
 
   void searchByPlaca(String query) {
-    if (query.isEmpty) {
-      filteredVehicleEntries = List.from(vehicleEntries);
-    } else {
-      filteredVehicleEntries = vehicleEntries
-          .where((entry) =>
-              (entry.placa ?? '').toLowerCase().contains(query.toLowerCase()))
+    _applyFilters();
+    update();
+  }
+
+  // Method to get status counts
+  Map<String, int> getStatusCounts() {
+    Map<String, int> counts = {};
+    
+    for (var entry in vehicleEntries) {
+      final status = entry.estado?.toLowerCase() ?? 'sin estado';
+      counts[status] = (counts[status] ?? 0) + 1;
+    }
+    
+    return counts;
+  }
+
+  // Method to handle status filter tap
+  void onStatusFilterTap(String? status) {
+    selectedStatusFilter = status;
+    _applyFilters();
+    update();
+  }
+
+  // Apply both search and status filters
+  void _applyFilters() {
+    List<ParrkingResponse> result = List.from(vehicleEntries);
+    
+    // Apply status filter
+    if (selectedStatusFilter != null) {
+      result = result.where((entry) {
+        final entryStatus = entry.estado?.toLowerCase() ?? 'sin estado';
+        return entryStatus == selectedStatusFilter!.toLowerCase();
+      }).toList();
+    }
+    
+    // Apply search filter
+    final searchQuery = placaController.text;
+    if (searchQuery.isNotEmpty) {
+      result = result.where((entry) =>
+          (entry.placa ?? '').toLowerCase().contains(searchQuery.toLowerCase()))
           .toList();
     }
-    update();
+    
+    filteredVehicleEntries = result;
   }
 
   // ParrkingResponse? get selectedEntry {
@@ -230,7 +276,7 @@ class VehiclesValidationListController extends GetxController {
   //   return null;
   // }
 
-  Future<void> onVehicleCardTap(ParrkingResponse selectedVehicle) async {
+  Future<void> onVehicleCardTap(ParrkingResponse selectedVehicle, int index) async {
     try {
       // Limpiar cualquier filtro aplicado en el buscador
       placaController.clear();
@@ -247,7 +293,8 @@ class VehiclesValidationListController extends GetxController {
         }
         return;
       }
-      // Set the selected index and show loading
+  // Set the selected index and show loading
+  selectedEntryIndex.value = index;
       isCardLoading.value = true;
       update();
       // Prepare parameters for getParqueoIngreso
@@ -274,10 +321,11 @@ class VehiclesValidationListController extends GetxController {
       );
 
       // Navigate to ValidateParkingPage with the detailed vehicle data
-      final result = await Get.to(() => ValidateParkingPage(
-            vehicleData: vehicleDetails,
-            mainParkingEntry: mainParkingEntry,
-          ));
+  final result = await Get.to(() => ValidateParkingPage(
+    vehicleData: vehicleDetails,
+    mainParkingEntry: mainParkingEntry,
+    validationType: validationType,
+      ));
 
       // Si el resultado es true, actualizar la lista
       if (result == true) {
@@ -286,6 +334,7 @@ class VehiclesValidationListController extends GetxController {
     } catch (e) {
     } finally {
       isCardLoading.value = false;
+  selectedEntryIndex.value = null;
       update();
     }
   }

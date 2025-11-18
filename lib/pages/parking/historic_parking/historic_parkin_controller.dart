@@ -326,6 +326,8 @@ class HistoricParkinController extends GetxController {
         cedula: historyData.ingreso!.cedula,
         celular: historyData.ingreso!.celular,
         placa: historyData.ingreso!.placa,
+        especial: historyData.ingreso!.especial,
+        valorPerdida: historyData.ingreso!.valorPerdida,
         imgIngreso: historyData.ingreso!.imgIngreso,
         imgValidacion: historyData.ingreso!.imgValidacion,
         imgSalida: historyData.ingreso!.imgSalida,

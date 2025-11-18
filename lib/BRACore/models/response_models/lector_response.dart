@@ -185,6 +185,21 @@ extension EntryTypeCodeExtension on EntryTypeCode {
         return '';
     }
   }
+  
+  String get schoolType {
+    switch (this) {
+      case EntryTypeCode.IO:
+        return isEnglishLenguage ? 'Occasional guest' : 'Invitado ocasional';
+      case EntryTypeCode.IR:
+        return isEnglishLenguage ? 'Recurrent guest' : 'Invitado recurrente';
+      case EntryTypeCode.RE:
+        return isEnglishLenguage ? 'Resident' : 'Residente';
+      case EntryTypeCode.GA:
+        return isEnglishLenguage ? 'Gate' : 'Garita';
+      default:
+        return '';
+    }
+  }
 
   String get addEntryEndpoint {
     switch (this) {

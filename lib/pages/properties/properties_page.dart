@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:qr_scaner_manrique/BRACore/api/api_auth.dart';
 import 'package:qr_scaner_manrique/BRACore/constants/size_phone.dart';
 import 'package:qr_scaner_manrique/BRACore/extensions/own-color-scheme.dart';
 import 'package:qr_scaner_manrique/BRACore/models/user_data.dart';
@@ -70,7 +71,17 @@ class PropertiesPage extends StatelessWidget {
                                   ),
                                 ),
                                 InkWell(
-                                  onTap: () {
+                                  onTap: () async {
+                                    // Llamar al API de logout si hay usuario logueado
+                                    final userLogin = UserData.sharedInstance.userLogin;
+                                    if (userLogin?.idUsuarioAdmin != null) {
+                                      final apiAuth = ApiAuth();
+                                      await apiAuth.logoutSession(
+                                        userLogin!.idUsuarioAdmin.toString(),
+                                      );
+                                    }
+                                    
+                                    // Proceder con el logout local
                                     UserData.sharedInstance.removeSession();
                                     Get.offAll(LoginPage());
                                   },

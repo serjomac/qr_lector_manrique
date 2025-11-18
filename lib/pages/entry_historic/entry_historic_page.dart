@@ -1,4 +1,3 @@
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
@@ -32,7 +31,6 @@ class EntryHistoricPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    Size size = MediaQuery.of(context).size;
     final stringLocations =
         AppLocalizationsGenerator.appLocalizations(context: context);
     return Scaffold(
@@ -157,81 +155,99 @@ class EntryHistoricPage extends StatelessWidget {
                                                   ),
                                                 ),
                                               ),
-                                              SizedBox(
-                                                width: 8,
-                                              ),
-                                              SizedBox(
-                                                width: 125,
-                                                child: DropdownButtonFormField2(
-                                                  decoration:
-                                                      CustomTextFormField
-                                                          .decorationFormCard(
-                                                    labelText: '',
-                                                    // suxffixIcon: InkWell(child: Icon(Icons.keyboard_arrow_down_rounded),),
-                                                    theme: theme,
-                                                    labelStyle: TextStyle(
-                                                      fontSize: 12,
-                                                      color: theme
-                                                          .own()
-                                                          .tertiaryTextColor,
-                                                    ),
-                                                    focusNode: FocusNode(),
-                                                    isFLoatingLabelVisible:
-                                                        true,
-                                                  ),
-                                                  value: _.entryTypeSelected,
-                                                  style: TextStyle(
-                                                      color: Colors.transparent,
-                                                      fontSize: 12),
-                                                  dropdownStyleData:
-                                                      DropdownStyleData(
-                                                    maxHeight:
-                                                        size.height * 0.55,
-                                                    width: size.width * 0.80,
-                                                    decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(14)),
-                                                    offset:
-                                                        const Offset(0, -12),
-                                                    scrollbarTheme:
-                                                        ScrollbarThemeData(
-                                                      radius:
-                                                          const Radius.circular(
-                                                              40),
-                                                      thickness:
-                                                          MaterialStateProperty
-                                                              .all<double>(6),
-                                                      thumbVisibility:
-                                                          MaterialStateProperty
-                                                              .all<bool>(true),
-                                                    ),
-                                                  ),
-                                                  items: _.entryTypeCode
-                                                      .map(
-                                                        (e) => DropdownMenuItem(
-                                                          value: e.value,
-                                                          child: BRAText(
-                                                            text: '${e.title}',
-                                                            size: 12,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                            color: theme
-                                                                .own()
-                                                                .primareyTextColor,
-                                                          ),
-                                                        ),
-                                                      )
-                                                      .toList(),
-                                                  onChanged:
-                                                      (EntryTypeCode? value) {
-                                                    _.entryTypeSelected =
-                                                        value ??
-                                                            EntryTypeCode.IO;
-                                                  },
-                                                ),
-                                              )
                                             ],
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          height: 16,
+                                        ),
+                                        // Chips filter for entry types
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(vertical: 8),
+                                          child: GetBuilder<EntryHistoricController>(
+                                            builder: (controller) {
+                                              final typeCounts = controller.getEntryTypeCounts();
+                                              return Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  BRAText(
+                                                    text: 'Filtrar por tipo',
+                                                    size: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: const Color(0xFF5B5856),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  SizedBox(
+                                                    height: 40,
+                                                    child: ListView(
+                                                      scrollDirection: Axis.horizontal,
+                                                      children: controller.entryTypeCode.map((entryType) {
+                                                        final isSelected = controller.entryTypeSelected == entryType.value;
+                                                        final count = typeCounts[entryType.value] ?? 0;
+                                                        final backgroundColor = controller.propertyEntryType == PropertyEntryType.schoolGate
+                                                            ? controller.getEntryTypeColor(entryType.value)
+                                                            : (isSelected ? theme.colorScheme.primary.withOpacity(0.1) : Colors.grey[100]);
+                                                        final borderColor = controller.propertyEntryType == PropertyEntryType.schoolGate
+                                                            ? controller.getEntryTypeBorderColor(entryType.value)
+                                                            : (isSelected ? theme.colorScheme.primary : Colors.grey[300]!);
+                                                        return Padding(
+                                                          padding: const EdgeInsets.only(right: 8),
+                                                          child: GestureDetector(
+                                                            onTap: () {
+                                                              controller.entryTypeSelected = entryType.value;
+                                                            },
+                                                            child: Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                              decoration: BoxDecoration(
+                                                                color: backgroundColor,
+                                                                border: Border.all(
+                                                                  color: borderColor,
+                                                                  width: isSelected ? 2 : 1,
+                                                                ),
+                                                                borderRadius: BorderRadius.circular(20),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisSize: MainAxisSize.min,
+                                                                children: [
+                                                                  BRAText(
+                                                                    text: entryType.title,
+                                                                    size: 12,
+                                                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                                                    color: controller.propertyEntryType == PropertyEntryType.schoolGate
+                                                                        ? controller.getEntryTypeTextColor(entryType.value)
+                                                                        : (isSelected 
+                                                                            ? theme.colorScheme.primary
+                                                                            : const Color(0xFF5B5856)),
+                                                                  ),
+                                                                  const SizedBox(width: 4),
+                                                                  Container(
+                                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                                    decoration: BoxDecoration(
+                                                                      color: isSelected 
+                                                                          ? theme.colorScheme.primary.withOpacity(0.2)
+                                                                          : Colors.grey[300],
+                                                                      borderRadius: BorderRadius.circular(10),
+                                                                    ),
+                                                                    child: BRAText(
+                                                                      text: count.toString(),
+                                                                      size: 10,
+                                                                      fontWeight: FontWeight.w600,
+                                                                      color: isSelected 
+                                                                          ? theme.colorScheme.primary
+                                                                          : const Color(0xFF5B5856),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        );
+                                                      }).toList(),
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
                                           ),
                                         ),
                                         SizedBox(
@@ -390,16 +406,40 @@ class EntryHistoricPage extends StatelessWidget {
                                                                   if (isGroupedView) ...[
                                                                     // Vista agrupada: mostrar información del representante
                                                                     BRAText(
-                                                                      text: 'Cédula: ${schoolEntry.cedulaResidente ?? ''}',
+                                                                      text: 'Celular: ${schoolEntry.celularResidente ?? ''}',
                                                                       size: 14,
                                                                       color: theme.own().tertiaryTextColor,
                                                                     ),
-                                                                    if (schoolEntry.tipo != null)
-                                                                      BRAText(
-                                                                        text: 'Tipo: ${schoolEntry.tipo!.value}',
-                                                                        size: 14,
-                                                                        color: theme.own().tertiaryTextColor,
+                                                                    if (schoolEntry.tipo != null) ...[
+                                                                      const SizedBox(height: 4),
+                                                                      Row(
+                                                                        children: [
+                                                                          BRAText(
+                                                                            text: 'Tipo:',
+                                                                            size: 14,
+                                                                            color: theme.own().tertiaryTextColor,
+                                                                          ),
+                                                                          const SizedBox(width: 8),
+                                                                          Container(
+                                                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                            decoration: BoxDecoration(
+                                                                              color: _.getEntryTypeColor(schoolEntry.tipo!),
+                                                                              border: Border.all(
+                                                                                color: _.getEntryTypeBorderColor(schoolEntry.tipo!),
+                                                                                width: 1,
+                                                                              ),
+                                                                              borderRadius: BorderRadius.circular(12),
+                                                                            ),
+                                                                            child: BRAText(
+                                                                              text: schoolEntry.tipo!.value,
+                                                                              size: 12,
+                                                                              fontWeight: FontWeight.w500,
+                                                                              color: _.getEntryTypeTextColor(schoolEntry.tipo!),
+                                                                            ),
+                                                                          ),
+                                                                        ],
                                                                       ),
+                                                                    ],
                                                                   ] else ...[
                                                                     // Vista individual: mostrar información del estudiante
                                                                     if (schoolEntry.nombreCategoria != null)
@@ -414,9 +454,45 @@ class EntryHistoricPage extends StatelessWidget {
                                                                         size: 14,
                                                                         color: theme.own().tertiaryTextColor,
                                                                       ),
-                                                                    if (schoolEntry.nombreRetira != null)
+                                                                    // Campo de tipo con colores de chips
+                                                                    if (schoolEntry.tipo != null) ...[
+                                                                      const SizedBox(height: 4),
+                                                                      Row(
+                                                                        children: [
+                                                                          BRAText(
+                                                                            text: 'Tipo:',
+                                                                            size: 14,
+                                                                            color: theme.own().tertiaryTextColor,
+                                                                          ),
+                                                                          const SizedBox(width: 8),
+                                                                          Container(
+                                                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                            decoration: BoxDecoration(
+                                                                              color: _.getEntryTypeColor(schoolEntry.tipo!),
+                                                                              border: Border.all(
+                                                                                color: _.getEntryTypeBorderColor(schoolEntry.tipo!),
+                                                                                width: 1,
+                                                                              ),
+                                                                              borderRadius: BorderRadius.circular(12),
+                                                                            ),
+                                                                            child: BRAText(
+                                                                              text: schoolEntry.tipo!.value,
+                                                                              size: 12,
+                                                                              fontWeight: FontWeight.w500,
+                                                                              color: _.getEntryTypeTextColor(schoolEntry.tipo!),
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    ],
+                                                                    // Solo mostrar "Retira" si el tipo NO es RE (Residente), nombreRetira no está vacío y nombreInvitado no está vacío
+                                                                    if (schoolEntry.nombreRetira != null && 
+                                                                        schoolEntry.nombreRetira!.isNotEmpty &&
+                                                                        schoolEntry.tipo != EntryTypeCode.RE &&
+                                                                        schoolEntry.nombreInvitado != null &&
+                                                                        schoolEntry.nombreInvitado!.isNotEmpty)
                                                                       BRAText(
-                                                                        text: 'Retira: ${schoolEntry.nombreRetira}',
+                                                                        text: 'Retira: ${schoolEntry.nombreInvitado}',
                                                                         size: 14,
                                                                         color: theme.own().tertiaryTextColor,
                                                                       ),
@@ -533,63 +609,99 @@ class EntryHistoricPage extends StatelessWidget {
                                       SizedBox(
                                         width: 8,
                                       ),
-                                      SizedBox(
-                                        width: 125,
-                                        child: DropdownButtonFormField2(
-                                          decoration: CustomTextFormField
-                                              .decorationFormCard(
-                                            labelText: '',
-                                            theme: theme,
-                                            labelStyle: TextStyle(
-                                              fontSize: 12,
-                                              color:
-                                                  theme.own().tertiaryTextColor,
-                                            ),
-                                            focusNode: FocusNode(),
-                                            isFLoatingLabelVisible: true,
-                                          ),
-                                          value: _.entryTypeSelected,
-                                          style: TextStyle(
-                                              color: Colors.transparent,
-                                              fontSize: 12),
-                                          dropdownStyleData: DropdownStyleData(
-                                            maxHeight: size.height * 0.55,
-                                            width: size.width * 0.80,
-                                            decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(14)),
-                                            offset: const Offset(0, -12),
-                                            scrollbarTheme: ScrollbarThemeData(
-                                              radius: const Radius.circular(40),
-                                              thickness: MaterialStateProperty
-                                                  .all<double>(6),
-                                              thumbVisibility:
-                                                  MaterialStateProperty.all<
-                                                      bool>(true),
-                                            ),
-                                          ),
-                                          items: _.entryTypeCode
-                                              .map(
-                                                (e) => DropdownMenuItem(
-                                                  value: e.value,
-                                                  child: BRAText(
-                                                    text: '${e.title}',
-                                                    size: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: theme
-                                                        .own()
-                                                        .primareyTextColor,
-                                                  ),
-                                                ),
-                                              )
-                                              .toList(),
-                                          onChanged: (EntryTypeCode? value) {
-                                            _.entryTypeSelected =
-                                                value ?? EntryTypeCode.IO;
-                                          },
-                                        ),
-                                      )
                                     ],
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 16,
+                                ),
+                                // Chips filter for entry types
+                                Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  child: GetBuilder<EntryHistoricController>(
+                                    builder: (controller) {
+                                      final typeCounts = controller.getEntryTypeCounts();
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          BRAText(
+                                            text: 'Filtrar por tipo',
+                                            size: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: const Color(0xFF5B5856),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          SizedBox(
+                                            height: 40,
+                                            child: ListView(
+                                              scrollDirection: Axis.horizontal,
+                                              children: controller.entryTypeCode.map((entryType) {
+                                                final isSelected = controller.entryTypeSelected == entryType.value;
+                                                final count = typeCounts[entryType.value] ?? 0;
+                                                final backgroundColor = controller.propertyEntryType == PropertyEntryType.schoolGate
+                                                    ? controller.getEntryTypeColor(entryType.value)
+                                                    : (isSelected ? theme.colorScheme.primary.withOpacity(0.1) : Colors.grey[100]);
+                                                final borderColor = controller.propertyEntryType == PropertyEntryType.schoolGate
+                                                    ? controller.getEntryTypeBorderColor(entryType.value)
+                                                    : (isSelected ? theme.colorScheme.primary : Colors.grey[300]!);
+                                                return Padding(
+                                                  padding: const EdgeInsets.only(right: 8),
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      controller.entryTypeSelected = entryType.value;
+                                                    },
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                      decoration: BoxDecoration(
+                                                        color: backgroundColor,
+                                                        border: Border.all(
+                                                          color: borderColor,
+                                                          width: isSelected ? 2 : 1,
+                                                        ),
+                                                        borderRadius: BorderRadius.circular(20),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          BRAText(
+                                                            text: entryType.title,
+                                                            size: 12,
+                                                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                                            color: controller.propertyEntryType == PropertyEntryType.schoolGate
+                                                                ? controller.getEntryTypeTextColor(entryType.value)
+                                                                : (isSelected 
+                                                                    ? theme.colorScheme.primary
+                                                                    : const Color(0xFF5B5856)),
+                                                          ),
+                                                          const SizedBox(width: 4),
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                            decoration: BoxDecoration(
+                                                              color: isSelected 
+                                                                  ? theme.colorScheme.primary.withOpacity(0.2)
+                                                                  : Colors.grey[300],
+                                                              borderRadius: BorderRadius.circular(10),
+                                                            ),
+                                                            child: BRAText(
+                                                              text: count.toString(),
+                                                              size: 10,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: isSelected 
+                                                                  ? theme.colorScheme.primary
+                                                                  : const Color(0xFF5B5856),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
                                 SizedBox(
@@ -773,16 +885,40 @@ class EntryHistoricPage extends StatelessWidget {
                                                       if (isGroupedView) ...[
                                                         // Vista agrupada: mostrar información del representante
                                                         BRAText(
-                                                          text: 'Cédula: ${schoolEntry.cedulaResidente ?? ''}',
+                                                          text: 'Celular: ${schoolEntry.celularResidente ?? ''}',
                                                           size: 14,
                                                           color: theme.own().tertiaryTextColor,
                                                         ),
-                                                        if (schoolEntry.tipo != null)
-                                                          BRAText(
-                                                            text: 'Tipo: ${schoolEntry.tipo!.value}',
-                                                            size: 14,
-                                                            color: theme.own().tertiaryTextColor,
+                                                        if (schoolEntry.tipo != null) ...[
+                                                          const SizedBox(height: 4),
+                                                          Row(
+                                                            children: [
+                                                              BRAText(
+                                                                text: 'Tipo:',
+                                                                size: 14,
+                                                                color: theme.own().tertiaryTextColor,
+                                                              ),
+                                                              const SizedBox(width: 8),
+                                                              Container(
+                                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                decoration: BoxDecoration(
+                                                                  color: _.getEntryTypeColor(schoolEntry.tipo!),
+                                                                  border: Border.all(
+                                                                    color: _.getEntryTypeBorderColor(schoolEntry.tipo!),
+                                                                    width: 1,
+                                                                  ),
+                                                                  borderRadius: BorderRadius.circular(12),
+                                                                ),
+                                                                child: BRAText(
+                                                                  text: schoolEntry.tipo!.value,
+                                                                  size: 12,
+                                                                  fontWeight: FontWeight.w500,
+                                                                  color: _.getEntryTypeTextColor(schoolEntry.tipo!),
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
+                                                        ],
                                                       ] else ...[
                                                         // Vista individual: mostrar información del estudiante
                                                         if (schoolEntry.nombreCategoria != null)
@@ -797,11 +933,43 @@ class EntryHistoricPage extends StatelessWidget {
                                                             size: 14,
                                                             color: theme.own().tertiaryTextColor,
                                                           ),
-                                                        if (schoolEntry.nombreRetira != null)
+                                                        // Solo mostrar "Retira" si el tipo NO es RE (Residente) y nombreRetira no está vacío
+                                                        if (schoolEntry.nombreRetira != null && 
+                                                            schoolEntry.nombreRetira!.isNotEmpty &&
+                                                            schoolEntry.tipo != EntryTypeCode.RE)
                                                           BRAText(
                                                             text: 'Retira: ${schoolEntry.nombreRetira}',
                                                             size: 14,
                                                             color: theme.own().tertiaryTextColor,
+                                                          ),
+                                                        // Mostrar tipo
+                                                        if (schoolEntry.tipo != null)
+                                                          Row(
+                                                            children: [
+                                                              BRAText(
+                                                                text: 'Tipo',
+                                                                size: 14,
+                                                                color: theme.own().tertiaryTextColor,
+                                                              ),
+                                                              Container(
+                                                                margin: EdgeInsets.only(left: 8),
+                                                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                decoration: BoxDecoration(
+                                                                  color: _.getEntryTypeColor(schoolEntry.tipo!),
+                                                                  border: Border.all(
+                                                                    color: _.getEntryTypeBorderColor(schoolEntry.tipo!),
+                                                                    width: 1,
+                                                                  ),
+                                                                  borderRadius: BorderRadius.circular(12),
+                                                                ),
+                                                                child: BRAText(
+                                                                  text: schoolEntry.tipo!.value,
+                                                                  size: 12,
+                                                                  fontWeight: FontWeight.w500,
+                                                                  color: _.getEntryTypeTextColor(schoolEntry.tipo!),
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
                                                       ],
                                                       if (schoolEntry.fechaCreacion != null)

@@ -20,6 +20,7 @@ import 'package:qr_scaner_manrique/BRACore/enums/invitation_type.dart';
 import 'package:qr_scaner_manrique/BRACore/enums/ocr_type.dart';
 import 'package:qr_scaner_manrique/BRACore/enums/photo_type.dart';
 import 'package:qr_scaner_manrique/BRACore/extensions/file_extensions.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/entrance.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/invitation_response.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/lector_response.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/orc_dni_model.dart';
@@ -57,6 +58,7 @@ class InvitationsControllers extends GetxController
   String previewPrimario2Text = '';
 
   bool isFiltering = false;
+  bool invitationsFetched = false;
   RxBool loadingInvitations = false.obs;
   RxBool addEntryLoading = false.obs;
 
@@ -118,21 +120,31 @@ class InvitationsControllers extends GetxController
   set visitorType(EntryTypeCode visitorType) {
     _visitorType = visitorType;
     autoCompleteResdientSelected = null;
+    
+    // Solo cargar residentes cuando se selecciona el tipo "Residente"
+    
     update(['form']);
   }
 
   @override
   void onInit() async {
     tabController = TabController(length: 2, vsync: this);
+    tabController.addListener(() {
+      if (tabController.index == 1 && !invitationsFetched) {
+        invitationsFetched = true;
+        fetchNormalsInvitations();
+      }
+    });
     await initializeDateFormatting('es', '');
-    fetchNormalsInvitations();
-    getAllResidents();
     final arguments = Get.arguments ?? {};
     if (arguments['gateIdSelected'] != null) {
       gateIdSelected = arguments['gateIdSelected'] as String;
       update();
     }
     registerListener();
+    if (residentList.isEmpty) {
+      getAllResidents();
+    }
     super.onInit();
   }
 
@@ -148,9 +160,9 @@ class InvitationsControllers extends GetxController
 
   fetchNormalsInvitations() async {
     loadingInvitations.value = true;
+    invitations = [];
     filterInvitations = [];
     try {
-      String endpoint = '';
       final res = await apiManager.fetchNormalInvitations(
         placeId: UserData.sharedInstance.placeSelected!.idLugar.toString(),
       );
@@ -231,17 +243,41 @@ class InvitationsControllers extends GetxController
     searched = true;
   }
 
-  getAllResidents() async {
+  getAllResidents({
+    bool forceRefresh = false,
+    int? customCacheMinutes,
+    bool? enableCacheControl,
+  }) async {
     try {
       isLoadingResidents.value = true;
       final res = await apiBinnacle.getAllResidentsByPlace(
         UserData.sharedInstance.placeSelected!.idLugar.toString(),
+        forceRefresh: forceRefresh,
+        customCacheMinutes: customCacheMinutes,
+        enableCacheControl: enableCacheControl,
       );
       residentList = res;
       isLoadingResidents.value = false;
     } on DioError catch (_) {
       isLoadingResidents.value = false;
     }
+  }
+
+  /// Force refresh residents data ignoring cache
+  refreshResidentsData() async {
+    await getAllResidents(forceRefresh: true);
+  }
+
+  /// Get cache status for current place
+  Map<String, dynamic> getResidentsCacheStatus() {
+    final placeId = UserData.sharedInstance.placeSelected!.idLugar.toString();
+    return ApiBinnacle.getCacheStatus(placeId);
+  }
+
+  /// Clear residents cache for current place
+  clearResidentsCache() {
+    final placeId = UserData.sharedInstance.placeSelected!.idLugar.toString();
+    ApiBinnacle.clearResidentsCache(placeId: placeId);
   }
 
   Iterable<ResidentResponse> getResidentInfo(
@@ -465,6 +501,7 @@ class InvitationsControllers extends GetxController
         observation: descriptionController.text,
         entranceType: RegisterEntryType.qrCode,
         placeId: placeId,
+        registerType: TypeDoor.entrance.value
       );
       addEntryLoading.value = false;
       await showDialog(

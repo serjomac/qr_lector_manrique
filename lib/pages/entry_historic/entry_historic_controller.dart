@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:qr_scaner_manrique/BRACore/api/api_binnacle.dart';
 import 'package:qr_scaner_manrique/BRACore/api/api_lector.dart';
 import 'package:qr_scaner_manrique/BRACore/api/api_school.dart';
+import 'package:qr_scaner_manrique/BRACore/models/response_models/entrance.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/history_school_response.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/resident_childs_response.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/pending_school_regiter_response.dart';
@@ -148,9 +149,21 @@ class EntryHistoricController extends GetxController {
 
   set lasDaysSelected(FilterLastDay? filterLastDay) {
     _lasDaysSelected = filterLastDay;
-    endDate = DateTime.now();
-    endDateTemprary = DateTime.now();
-    startDate = endDate.subtract(Duration(days: filterLastDay?.value ?? 7));
+    final now = DateTime.now();
+    
+    // endDate siempre debe ser el final del día actual (23:59:59)
+    endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    endDateTemprary = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    
+    // startDate debe ser el inicio del día calculado (00:00:00)
+    final calculatedStartDate = endDate.subtract(Duration(days: filterLastDay?.value ?? 7));
+    startDate = DateTime(
+      calculatedStartDate.year,
+      calculatedStartDate.month,
+      calculatedStartDate.day,
+      0, 0, 0
+    );
+    
     fetchEntries();
   }
 
@@ -159,10 +172,10 @@ class EntryHistoricController extends GetxController {
   }
 
   set entryTypeSelected(EntryTypeCode entryTypeSelected) {
-    filterEntries = [];
-    isFiltering = false;
     _entryTypeSelected = entryTypeSelected;
-    fetchEntries();
+    // Aplicar filtro local en lugar de llamar al servicio
+    applyLocalTypeFilter();
+    update();
   }
 
   EntryTypeCode get entryTypeSelected {
@@ -192,6 +205,9 @@ class EntryHistoricController extends GetxController {
       EntryTypeHistoric(
           title: isEnglishLanguage ? 'Gate' : 'Garita',
           value: EntryTypeCode.GA),
+      EntryTypeHistoric(
+          title: isEnglishLanguage ? 'Resident' : 'Residente',
+          value: EntryTypeCode.RE),
     ];
     filterLastDay = [
       FilterLastDay(
@@ -209,6 +225,19 @@ class EntryHistoricController extends GetxController {
     // rangeSelectorDate =
     //     PickerDateRange(startDate, startDate.add(Duration(days: 7)));
     _lasDaysSelected = filterLastDay[0];
+    
+    // Inicializar fechas con horas consistentes
+    final now = DateTime.now();
+    endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    endDateTemprary = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final calculatedStartDate = now.subtract(Duration(days: 1));
+    startDate = DateTime(
+      calculatedStartDate.year,
+      calculatedStartDate.month,
+      calculatedStartDate.day,
+      0, 0, 0
+    );
+    
     final arguments = Get.arguments;
     if (arguments['mainActionType'] != null) {
       mainActionType = arguments['mainActionType'] as MainActionType;
@@ -247,20 +276,20 @@ class EntryHistoricController extends GetxController {
           endDate: formatter.format(endDate),
         );
         
-        // Aplicar agrupación si está habilitada
-        if (isGrouped.value) {
-          schoolHistoryEntries = _groupByRepresentative(_allSchoolHistoryEntries);
-        } else {
-          schoolHistoryEntries = List.from(_allSchoolHistoryEntries);
-        }
+        // Aplicar filtro local por tipo (igual que para otros tipos de entrada)
+        applyLocalTypeFilter();
       } else {
-        // Comportamiento original para otros tipos
-        entries = await apiBinnacle.fetchAllEntries(
+        // Comportamiento modificado: traer TODOS los tipos (TD) y filtrar localmente
+        _allEntries = await apiBinnacle.fetchAllEntries(
             mainActionType: mainActionType,
             startDate: startDate,
             endDate: endDate,
             placeId: UserData.sharedInstance.placeSelected!.idLugar.toString(),
-            entryTypeCode: entryTypeSelected);
+            entryTypeCode: EntryTypeCode.TD, // Siempre traer todos los tipos
+            idPuerta: gateIdSelected.isNotEmpty ? gateIdSelected : null);
+        
+        // Aplicar filtro local por tipo
+        applyLocalTypeFilter();
       }
       
       loadingEntries.value = false;
@@ -277,15 +306,27 @@ class EntryHistoricController extends GetxController {
     filterSchoolHistoryEntries = [];
     
     if (propertyEntryType == PropertyEntryType.schoolGate) {
-      // Usar la misma lógica que PendingSchoolRegisterController.filterRegisters()
+      // Primero aplicar filtro de tipo
+      List<HistorySchoolResponse> typeFilteredList;
+      if (_entryTypeSelected == EntryTypeCode.TD) {
+        // Usar todos si no hay filtro de tipo
+        typeFilteredList = List.from(_allSchoolHistoryEntries);
+      } else {
+        // Filtrar por tipo específico
+        typeFilteredList = _allSchoolHistoryEntries
+            .where((entry) => entry.tipo == _entryTypeSelected)
+            .toList();
+      }
+      
+      // Luego aplicar filtro de búsqueda sobre los resultados filtrados por tipo
       List<HistorySchoolResponse> filteredList;
       
       if (query.isEmpty) {
-        filteredList = List.from(_allSchoolHistoryEntries);
+        filteredList = typeFilteredList;
         isFiltering = false;
       } else {
         query = query.toLowerCase();
-        filteredList = _allSchoolHistoryEntries.where((entry) {
+        filteredList = typeFilteredList.where((entry) {
           final nombreHijo = (entry.nombreHijo ?? '').toLowerCase();
           final nombreCategoria = (entry.nombreCategoria ?? '').toLowerCase();
           final nombresResidente = (entry.nombresResidente ?? '').toLowerCase();
@@ -340,6 +381,143 @@ class EntryHistoricController extends GetxController {
     filterSchoolEntries(query: query);
   }
 
+  // Variables para mantener las listas completas sin filtrar
+  List<EntryResponse> _allEntries = [];
+  
+  // Aplicar filtro local por tipo de entrada
+  void applyLocalTypeFilter() {
+    if (propertyEntryType == PropertyEntryType.schoolGate) {
+      // Para schoolGate, filtrar por tipo usando el campo 'tipo' de HistorySchoolResponse
+      if (_entryTypeSelected == EntryTypeCode.TD) {
+        // Mostrar todos
+        schoolHistoryEntries = isGrouped.value 
+            ? _groupByRepresentative(_allSchoolHistoryEntries)
+            : List.from(_allSchoolHistoryEntries);
+      } else {
+        // Filtrar por tipo específico
+        List<HistorySchoolResponse> filtered = _allSchoolHistoryEntries
+            .where((entry) => entry.tipo == _entryTypeSelected)
+            .toList();
+        
+        schoolHistoryEntries = isGrouped.value 
+            ? _groupByRepresentative(filtered)
+            : filtered;
+      }
+    } else {
+      // Para otros tipos de entrada
+      if (_entryTypeSelected == EntryTypeCode.TD) {
+        // Mostrar todos
+        entries = List.from(_allEntries);
+      } else {
+        // Filtrar por tipo específico
+        entries = _allEntries.where((entry) => entry.tipoCodigo == _entryTypeSelected).toList();
+      }
+    }
+    
+    // Si hay búsqueda activa, aplicar también ese filtro
+    if (currentSearchQuery.isNotEmpty) {
+      filterSchoolEntries(query: currentSearchQuery);
+    }
+  }
+  
+  // Obtener el conteo de cada tipo de entrada
+  Map<EntryTypeCode, int> getEntryTypeCounts() {
+    Map<EntryTypeCode, int> counts = {};
+    
+    // Inicializar contadores
+    for (var entryType in entryTypeCode) {
+      counts[entryType.value] = 0;
+    }
+    
+    if (propertyEntryType == PropertyEntryType.schoolGate) {
+      // Contar tipos para schoolGate
+      for (var entry in _allSchoolHistoryEntries) {
+        if (entry.tipo != null && counts.containsKey(entry.tipo)) {
+          counts[entry.tipo!] = (counts[entry.tipo!] ?? 0) + 1;
+        }
+      }
+      // El total es la suma de todos los tipos
+      counts[EntryTypeCode.TD] = _allSchoolHistoryEntries.length;
+    } else {
+      // Contar tipos para otros tipos de entrada
+      for (var entry in _allEntries) {
+        if (entry.tipoCodigo != null && counts.containsKey(entry.tipoCodigo)) {
+          counts[entry.tipoCodigo!] = (counts[entry.tipoCodigo!] ?? 0) + 1;
+        }
+      }
+      // El total es la suma de todos los tipos
+      counts[EntryTypeCode.TD] = _allEntries.length;
+    }
+    
+    return counts;
+  }
+
+  // Obtener color específico para cada tipo de entrada (solo para schoolGate)
+  Color getEntryTypeColor(EntryTypeCode entryType) {
+    if (propertyEntryType != PropertyEntryType.schoolGate) {
+      return Colors.grey[100]!; // Color por defecto para otros tipos
+    }
+
+    switch (entryType) {
+      case EntryTypeCode.TD: // Todos
+        return const Color(0xFFCFF9E6); // Verde claro (mismo que RE)
+      case EntryTypeCode.IO: // Ocasionales
+        return const Color(0xFFFFBCBC); // Rojo claro
+      case EntryTypeCode.IR: // Recurrentes
+        return const Color(0xFFFEEFC8); // Amarillo claro
+      case EntryTypeCode.GA: // Garita
+        return const Color(0xFFCFF9E6); // Verde claro (mismo que RE)
+      case EntryTypeCode.RE: // Residente
+        return const Color(0xFFCFF9E6); // Verde claro
+      default:
+        return const Color(0xFFCFF9E6); // Verde claro por defecto
+    }
+  }
+
+  // Obtener color del borde para cada tipo de entrada
+  Color getEntryTypeBorderColor(EntryTypeCode entryType) {
+    if (propertyEntryType != PropertyEntryType.schoolGate) {
+      return Colors.grey[300]!; // Color por defecto para otros tipos
+    }
+
+    switch (entryType) {
+      case EntryTypeCode.TD: // Todos
+        return const Color(0xFF036546); // Verde oscuro (mismo que RE)
+      case EntryTypeCode.IO: // Ocasionales
+        return const Color(0xFFA30003); // Rojo oscuro
+      case EntryTypeCode.IR: // Recurrentes
+        return const Color(0xFFB86E00); // Amarillo oscuro
+      case EntryTypeCode.GA: // Garita
+        return const Color(0xFF036546); // Verde oscuro (mismo que RE)
+      case EntryTypeCode.RE: // Residente
+        return const Color(0xFF036546); // Verde oscuro
+      default:
+        return const Color(0xFF036546); // Verde oscuro por defecto
+    }
+  }
+
+  // Obtener color del texto para cada tipo de entrada
+  Color getEntryTypeTextColor(EntryTypeCode entryType) {
+    if (propertyEntryType != PropertyEntryType.schoolGate) {
+      return Colors.grey[700]!; // Color por defecto para otros tipos
+    }
+
+    switch (entryType) {
+      case EntryTypeCode.TD: // Todos
+        return const Color(0xFF036546); // Verde oscuro (mismo que RE)
+      case EntryTypeCode.IO: // Ocasionales
+        return const Color(0xFFA30003); // Rojo oscuro
+      case EntryTypeCode.IR: // Recurrentes
+        return const Color(0xFFB86E00); // Amarillo oscuro
+      case EntryTypeCode.GA: // Garita
+        return const Color(0xFF036546); // Verde oscuro (mismo que RE)
+      case EntryTypeCode.RE: // Residente
+        return const Color(0xFF036546); // Verde oscuro
+      default:
+        return const Color(0xFF036546); // Verde oscuro por defecto
+    }
+  }
+
   onTapInvitation(EntryResponse entry) {
     if (mainActionType == MainActionType.hisotric) {
       showModalBottomSheet(
@@ -372,6 +550,10 @@ class EntryHistoricController extends GetxController {
         idResidenteLugar: schoolEntry.idResidenteLugar,
         nombresResidente: schoolEntry.nombresResidente,
         apellidosResidente: schoolEntry.apellidosResidente,
+        celularResidente: schoolEntry.celularResidente,
+        cedulaResidente: schoolEntry.cedulaResidente,
+        nombrePrimario: schoolEntry.nombrePrimario,
+        nombreSecundario: schoolEntry.nombreSecundario,
         descripcion: schoolEntry.descripcion,
         fechaCreacion: schoolEntry.fechaCreacion,
         // Map historic withdrawal information
@@ -398,8 +580,20 @@ class EntryHistoricController extends GetxController {
           nombresResidente: entry.nombresResidente,
           apellidosResidente: entry.apellidosResidente,
           cedulaResidente: entry.cedulaResidente,
+          celularResidente: entry.celularResidente,
+          nombrePrimario: entry.nombrePrimario,
+          nameInvitation: entry.nombreInvitado,
+          nombreSecundario: entry.nombreSecundario,
+          nombreRetira: entry.nombreRetira,
+          cedulaRetira: entry.cedulaRetira,
+          placaRetira: entry.placaRetira,
+          descripcion: entry.descripcion,
+          fechaCreacion: entry.fechaCreacion,
+          fechaRetiro: entry.fechaRetiro,
+          imagenes: entry.imagenes?.cast<String>(),
           tipo: entry.tipo,
           estado: entry.estado,
+          
         )
       ).toList();
       
@@ -449,8 +643,6 @@ class EntryHistoricController extends GetxController {
     if (image == null) return;
     File imageTemporary = File(image.path);
     File compressedImage = await imageTemporary.ensureFileSize(1500000);
-    int fileSizeInBytes = await compressedImage.length();
-    double fileSizeInMb = fileSizeInBytes / (1024 * 1024);
     String newPath = path.join(
       path.dirname(compressedImage.path),
       'image-${photoType.value}-${DateTime.now().millisecondsSinceEpoch}-${residientNameGateResidenceController.text}',
@@ -573,6 +765,7 @@ class EntryHistoricController extends GetxController {
         observation: descriptionController.text,
         entranceType: RegisterEntryType.residenceGate,
         placeId: placeId,
+        registerType: TypeDoor.exit.value
       );
       addLeaveLoading.value = false;
       showDialog(

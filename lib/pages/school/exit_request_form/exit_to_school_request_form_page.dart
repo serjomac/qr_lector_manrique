@@ -198,7 +198,7 @@ class ExitToSchoolRequestFormPage extends StatelessWidget {
               Expanded(
                 child: CustomTextFormField(
                   label: 'Primario',
-                  hintText: 'SOLAR',
+                  hintText: 'SOAR',
                   focusNode: FocusNode(),
                   controller: TextEditingController(),
                   onChanged: (value) {},
@@ -209,7 +209,7 @@ class ExitToSchoolRequestFormPage extends StatelessWidget {
               Expanded(
                 child: CustomTextFormField(
                   label: 'Secundario',
-                  hintText: '1',
+                  hintText: '',
                   focusNode: FocusNode(),
                   controller: TextEditingController(),
                   onChanged: (value) {},

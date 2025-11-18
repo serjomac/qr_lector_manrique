@@ -218,7 +218,7 @@ class AddEntryFormController extends GetxController
             return SuccessDialog(
               title: 'Informativo',
               subtitle:
-                  'La invitactión ya ha sido usada, presione continuar si desea volver a usarla.',
+                  'La invitación ya ha sido usada, presione continuar si desea volver a usarla.',
               iconSvg: ConstantsIcons.alertIcon,
               primaryButtonText: 'Continuar',
               secondaryButtonText: 'Cancelar',
@@ -240,7 +240,7 @@ class AddEntryFormController extends GetxController
               return SuccessDialog(
                 title: 'Informativo',
                 subtitle:
-                    'La invitactión aún no inicia, presione continuar si desea usarla antes de tiempo.',
+                    'La invitación aún no inicia, presione continuar si desea usarla antes de tiempo.',
                 iconSvg: ConstantsIcons.alertIcon,
                 primaryButtonText: 'Continuar',
                 secondaryButtonText: 'Cancelar',
@@ -261,7 +261,7 @@ class AddEntryFormController extends GetxController
               return SuccessDialog(
                 title: 'Informativo',
                 subtitle:
-                    'La invitactión ya está caducada, presione continuar si desea usarla.',
+                    'La invitación ya está caducada, presione continuar si desea usarla.',
                 iconSvg: ConstantsIcons.alertIcon,
                 primaryButtonText: 'Continuar',
                 secondaryButtonText: 'Cancelar',
@@ -543,14 +543,15 @@ class AddEntryFormController extends GetxController
         nationality: nationality,
         gender: gender,
         carId: licencePlate,
-        accessType: (mainActionType == MainActionType.qrScannerEntry &&
-                typeDoor == TypeDoor.entrance)
-            ? AccessType.exit
-            : AccessType.entrance,
+        accessType: 
+                typeDoor == TypeDoor.entrance
+            ? AccessType.entrance
+            : AccessType.exit,
         activity: activity,
         observation: descriptionController.text,
         entranceType: RegisterEntryType.qrCode,
         placeId: placeId,
+        registerType: typeDoor.value
       );
       addEntryLoading.value = false;
       showDialog(

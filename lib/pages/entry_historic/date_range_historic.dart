@@ -82,8 +82,35 @@ class DateRangeHistoric extends StatelessWidget {
                       onSubmit: (p0) {
                         _.lasDaysSelected = null;
                         final pickerDateRange = p0 as PickerDateRange;
-                        _.startDate = pickerDateRange.startDate ?? _.startDate;
-                        _.endDate = pickerDateRange.endDate ?? _.endDate;
+                        
+                        // Asegurar que startDate comience a las 00:00:00
+                        if (pickerDateRange.startDate != null) {
+                          _.startDate = DateTime(
+                            pickerDateRange.startDate!.year,
+                            pickerDateRange.startDate!.month,
+                            pickerDateRange.startDate!.day,
+                            0, 0, 0
+                          );
+                        }
+                        
+                        // Asegurar que endDate termine a las 23:59:59
+                        if (pickerDateRange.endDate != null) {
+                          _.endDate = DateTime(
+                            pickerDateRange.endDate!.year,
+                            pickerDateRange.endDate!.month,
+                            pickerDateRange.endDate!.day,
+                            23, 59, 59
+                          );
+                        } else if (pickerDateRange.startDate != null) {
+                          // Si solo se seleccionó una fecha, usar la misma para inicio y fin
+                          _.endDate = DateTime(
+                            pickerDateRange.startDate!.year,
+                            pickerDateRange.startDate!.month,
+                            pickerDateRange.startDate!.day,
+                            23, 59, 59
+                          );
+                        }
+                        
                         _.fetchEntries();
                         Get.back();
                       },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/Texts/BRAText.dart';
+import 'package:qr_scaner_manrique/BRACore/enums/funtionality_action_type.dart';
 import '../controller/exit_request_form_controller.dart';
 
 class ChildrenListView extends StatelessWidget {
@@ -16,36 +17,39 @@ class ChildrenListView extends StatelessWidget {
         SizedBox(height: 16,),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFC3C3C3)),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 8),
-                Obx(() => SizedBox(
-                  height: 22,
-                  width: 22,
-                  child: Checkbox(
-                    value: controller.selectAll.value,
-                    activeColor: const Color(0xFF85736F),
-                    onChanged: controller.isHistoricMode ? null : (_) => controller.toggleSelectAll(),
-                  ),
-                )),
-                const Expanded(
-                  child: Center(
-                    child: BRAText(
-                      text: 'Seleccionar todos',
-                      size: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
+          child: GestureDetector(
+            onTap: controller.isHistoricMode ? null : () => controller.toggleSelectAll(),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFC3C3C3)),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 8),
+                  Obx(() => SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: Checkbox(
+                      value: controller.selectAll.value,
+                      checkColor: Colors.white,
+                      onChanged: controller.isHistoricMode ? null : (_) => controller.toggleSelectAll(),
+                    ),
+                  )),
+                  const Expanded(
+                    child: Center(
+                      child: BRAText(
+                        text: 'Seleccionar todos',
+                        size: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -88,11 +92,20 @@ class ChildrenListView extends StatelessWidget {
                     ...studentsInCourse.asMap().entries.map((entry) {
                       final studentIndex = controller.students.indexOf(entry.value);
                       final student = entry.value;
+                      final isPendingWithdrawal = student.estadoStaudent == "P";
+                      final isAlreadyWithdrawn = student.estadoStaudent == "I";
+                      final isActive = student.estadoStaudent == "A";
+                      
+                      // Allow selection only for:
+                      // - Students with status 'P' when mainActionType is gateLeave
+                      // - Students with status 'A' (active)
+                      final isSelectable = (isPendingWithdrawal && controller.mainActionType == MainActionType.gateLeave) || isActive;
+                      final isNotSelectable = !isSelectable;
                       
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12.0),
                         child: GestureDetector(
-                          onTap: () => controller.toggleStudentSelection(studentIndex),
+                          onTap: controller.isHistoricMode || isNotSelectable ? null : () => controller.toggleStudentSelection(studentIndex),
                           child: Container(
                             height: 100,
                             decoration: BoxDecoration(
@@ -117,18 +130,39 @@ class ChildrenListView extends StatelessWidget {
                                 Positioned(
                                   top: 16,
                                   left: 17,
-                                  child: BRAText(
-                                    text: student.course,
-                                    size: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: const Color(0xFF202023),
+                                  child: Row(
+                                    children: [
+                                      BRAText(
+                                        text: student.course,
+                                        size: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF202023),
+                                      ),
+                                      // Disclaimer for pending withdrawal or already withdrawn status (show in all mainActionType)
+                                      if (isPendingWithdrawal || isAlreadyWithdrawn)
+                                        Container(
+                                          margin: const EdgeInsets.only(left: 8),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                                          ),
+                                          child: BRAText(
+                                            text: isAlreadyWithdrawn ? 'Ya fue retirado' : 'Pendiente de retiro',
+                                            size: 10,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.orange.shade700,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                                 Positioned(
                                   top: 16,
                                   right: 18,
                                   child: BRAText(
-                                    text: 'Fecha: ${student.date}',
+                                    text: '${student.date}',
                                     size: 12,
                                     fontWeight: FontWeight.w500,
                                     color: const Color(0xFF5B5856),
@@ -178,7 +212,7 @@ class ChildrenListView extends StatelessWidget {
                                     child: Checkbox(
                                       value: student.isSelected,
                                       checkColor: Colors.white,
-                                      onChanged: controller.isHistoricMode ? null : (_) => controller.toggleStudentSelection(studentIndex),
+                                      onChanged: controller.isHistoricMode || isNotSelectable ? null : (_) => controller.toggleStudentSelection(studentIndex),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(4),
                                       ),

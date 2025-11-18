@@ -138,6 +138,7 @@ class IngresoHistorial {
   final String? imgSalida;
   final String? tipoIngreso;
   final String? tipoSalida;
+  final String? valorPerdida;
   final String? actividad;
   final String? observacionIngreso;
   final String? observacionValidacion;
@@ -175,6 +176,7 @@ class IngresoHistorial {
     this.idInvitacion,
     this.idPuertaIngreso,
     this.idPuertaSalida,
+    this.valorPerdida,
     this.nombrePuertaIngreso,
     this.nombrePuertaSalida,
     this.idLugar,
@@ -230,6 +232,7 @@ class IngresoHistorial {
         idPuertaSalida: json["id_puerta_salida"],
         nombrePuertaIngreso: json["nombre_puerta_ingreso"],
         nombrePuertaSalida: json["nombre_puerta_salida"],
+        valorPerdida: json["valor_perdida"],
         idLugar: json["id_lugar"],
         nombre: json["nombre"],
         cedula: json["cedula"],

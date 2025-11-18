@@ -69,18 +69,18 @@ enum TypeDoor {
 
 final typeDoorValues = EnumValues({
   "I": TypeDoor.entrance,
-  "A": TypeDoor.exit,
+  "S": TypeDoor.exit,
 });
 
-extension OcrTypeExtension on TypeDoor {
-  // String get value {
-  //   switch (this) {
-  //     case AccessType.entrance:
-  //       return 'I';
-  //     case AccessType.exit:
-  //       return 'S';
-  //     default:
-  //       return '';
-  //   }
-  // }
+extension TypeDoorExtension on TypeDoor {
+  String get value {
+    switch (this) {
+      case TypeDoor.entrance:
+        return 'I';
+      case TypeDoor.exit:
+        return 'S';
+      default:
+        return '';
+    }
+  }
 }

@@ -6,15 +6,18 @@ import 'package:qr_scaner_manrique/BRAUXComponents/Texts/BRAText.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/buttons/BRAButton.dart';
 import 'package:qr_scaner_manrique/BRAUXComponents/textField/custom_text_form_field.dart';
 import 'package:qr_scaner_manrique/pages/parking/validate_parking/validate_parking_controller.dart';
+import 'package:qr_scaner_manrique/pages/parking/type_parking_register/parking_validation_type.dart';
 
 class ValidateParkingPage extends StatelessWidget {
   final ParrkingResponse vehicleData;
   final MainParkingEntry mainParkingEntry;
+  final ParkingValidationType? validationType;
 
   const ValidateParkingPage({
     Key? key,
     required this.vehicleData,
     required this.mainParkingEntry,
+    this.validationType,
   }) : super(key: key);
 
   @override
@@ -25,6 +28,7 @@ class ValidateParkingPage extends StatelessWidget {
         init: ValidateParkingController(
           vehicleData: vehicleData,
           mainParkingEntry: mainParkingEntry,
+          validationType: validationType,
         ),
         builder: (controller) {
           return SafeArea(
@@ -50,6 +54,9 @@ class ValidateParkingPage extends StatelessWidget {
 
                               // Placa del vehículo (común para todos los tabs)
                               _buildPlacaWidget(controller),
+
+                              // Disclaimer de valor pérdida (solo si es validación manual)
+                              _buildValorPerdidaDisclaimer(controller),
 
                               // Mensaje de alerta con observación (solo si existe)
                               _buildObservationAlert(controller),
@@ -217,6 +224,70 @@ class ValidateParkingPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildValorPerdidaDisclaimer(ValidateParkingController controller) {
+    // Solo mostrar cuando validationType es manual y hay valor de pérdida,
+    // o cuando mainParkingEntry es exit/history y especial es S (ticket perdido)
+    bool shouldShow = false;
+
+    if (mainParkingEntry == MainParkingEntry.validation) {
+      shouldShow = controller.vehicleData.ingreso?.valorPerdida != null &&
+                   controller.vehicleData.ingreso!.valorPerdida!.isNotEmpty;
+    } else if (mainParkingEntry == MainParkingEntry.exit || mainParkingEntry == MainParkingEntry.history) {
+      shouldShow = controller.vehicleData.ingreso?.especial == 'S' &&
+                   controller.vehicleData.ingreso?.valorPerdida != null &&
+                   controller.vehicleData.ingreso!.valorPerdida!.isNotEmpty;
+    }
+
+    if (!shouldShow) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3CD),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFFD60A), width: 1),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
+                color: Color(0xFFB45309),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const BRAText(
+                      text: "Valor de pérdida:",
+                      size: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFB45309),
+                    ),
+                    const SizedBox(height: 4),
+                    BRAText(
+                      text: "Este ticket tiene un valor de pérdida de \$${controller.vehicleData.ingreso!.valorPerdida}",
+                      size: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFFB45309),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1063,6 +1134,89 @@ class ValidateParkingPage extends StatelessWidget {
     );
   }
 
+  // Campo de celular (solo visible en modo validación)
+  Widget _buildCelularField(ValidateParkingController controller, ThemeData theme) {
+    if (controller.mainParkingEntry != MainParkingEntry.validation) {
+      return const SizedBox.shrink();
+    }
+    
+    return Form(
+      key: controller.celularFormKey,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: controller.celularValidacionController,
+              focusNode: controller.celularValidacionFocusNode,
+              keyboardType: TextInputType.phone,
+              decoration: CustomTextFormField.decorationFormCard(
+                    labelText: 'Celular para notificar pago (opcional)',
+                    isFLoatingLabelVisible: true,
+                    theme: theme,
+                    focusNode: controller.celularValidacionFocusNode),
+              style: const TextStyle(
+                color: Color(0xFF534340),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          // const SizedBox(width: 8),
+          // // Botón para seleccionar contacto
+          // Container(
+          //   margin: const EdgeInsets.only(top: 8),
+          //   child: Material(
+          //     color: theme.primaryColor,
+          //     borderRadius: BorderRadius.circular(8),
+          //     child: InkWell(
+          //       borderRadius: BorderRadius.circular(8),
+          //       onTap: () {
+          //         controller.pickContactForCelular();
+          //       },
+          //       child: Container(
+          //         width: 48,
+          //         height: 48,
+          //         alignment: Alignment.center,
+          //         child: const Icon(
+          //           Icons.contacts,
+          //           color: Colors.white,
+          //           size: 24,
+          //         ),
+          //       ),
+          //     ),
+          //   ),
+          // ),
+        ],
+      ),
+    );
+  }
+
+  // Checkbox de consumidor final (solo visible en modo validación)
+  Widget _buildConsumidorFinalCheckbox(ValidateParkingController controller, ThemeData theme) {
+    if (controller.mainParkingEntry != MainParkingEntry.validation) {
+      return const SizedBox.shrink();
+    }
+    
+    return Obx(() => Row(
+      children: [
+        Checkbox(
+          value: controller.isConsumidorFinal.value,
+          onChanged: (value) {
+            controller.isConsumidorFinal.value = value ?? true;
+          },
+          activeColor: theme.primaryColor,
+          checkColor: Colors.white,
+        ),
+        const BRAText(
+          text: "Consumidor final",
+          size: 16,
+          color: Color(0xFF231918),
+        ),
+      ],
+    ));
+  }
+
   Widget _buildObservacionField(ValidateParkingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1072,7 +1226,7 @@ class ValidateParkingPage extends StatelessWidget {
           child: BRAText(
             text: "Observación ",
             size: 14,
-            color: Color(0xFF231918),
+            color: Color.fromRGBO(35, 25, 24, 1),
           ),
         ),
         const SizedBox(height: 6),
@@ -1159,7 +1313,15 @@ class ValidateParkingPage extends StatelessWidget {
           ),
         ],
       ),
-      child: _buildGuardarButton(controller),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Checkbox de consumidor final (solo en modo validación)
+          _buildConsumidorFinalCheckbox(controller, Theme.of(Get.context!)),
+          const SizedBox(height: 8),
+          _buildGuardarButton(controller),
+        ],
+      ),
     );
   }
 
@@ -1264,6 +1426,15 @@ class ValidateParkingPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Campo de placa si está vacía o es null
+        if (controller.shouldShowPlacaField) ...[
+          Form(
+            key: controller.placaFormKey,
+            child: _buildPlacaInputField(controller, Theme.of(context)),
+          ),
+          const SizedBox(height: 20),
+        ],
+
         // Time and rate section (ahora incluye fecha y puerta)
         _buildTimeAndRateSection(controller),
 
@@ -1271,6 +1442,10 @@ class ValidateParkingPage extends StatelessWidget {
         _buildValidationImageSection(controller),
 
         const SizedBox(height: 32),
+        // Campo de celular (solo en modo validación)
+        _buildCelularField(controller, Theme.of(context)),
+        
+        const SizedBox(height: 16),
         // Observation field
         if (!controller.shouldHideObservacionValidacion)
           _buildExitObservationField(controller, context),
@@ -1443,6 +1618,11 @@ class ValidateParkingPage extends StatelessWidget {
 
         // Image upload section
         _buildExitImageUploadSection(controller),
+
+        const SizedBox(height: 20),
+
+        // Observation field
+        _buildExitSalidaObservationField(controller, Get.context!),
       ],
     );
   }
@@ -1639,7 +1819,8 @@ class ValidateParkingPage extends StatelessWidget {
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: controller.validacionImages.length + 1, // +1 para el botón de agregar
+            itemCount: controller.validacionImages.length +
+                1, // +1 para el botón de agregar
             itemBuilder: (context, index) {
               if (index == 0) {
                 // Primer elemento: botón para agregar imagen
@@ -1698,10 +1879,34 @@ class ValidateParkingPage extends StatelessWidget {
       height: 50,
       child: TextFormField(
         controller: controller.observacionValidacionController,
-        readOnly: controller.mainParkingEntry == MainParkingEntry.exit ||
-            controller.mainParkingEntry == MainParkingEntry.history,
+        readOnly: controller.mainParkingEntry == MainParkingEntry.history,
         maxLines: null,
         expands: true,
+        style: TextStyle(
+          color: Colors.black,
+        ),
+        decoration: CustomTextFormField.decorationFormCard(
+            labelText: 'Observación',
+            isFLoatingLabelVisible: true,
+            theme: Theme.of(context),
+            focusNode: FocusNode()),
+      ),
+    );
+  }
+
+  // Campo de observación dedicado para modo salida (siempre editable)
+  Widget _buildExitSalidaObservationField(
+      ValidateParkingController controller, BuildContext context) {
+    return SizedBox(
+      height: 50,
+      child: TextFormField(
+        controller: controller.observacionSalidaController,
+        readOnly: false, // Siempre editable en modo salida
+        maxLines: null,
+        expands: true,
+        style: TextStyle(
+          color: Colors.black,
+        ),
         decoration: CustomTextFormField.decorationFormCard(
             labelText: 'Observación',
             isFLoatingLabelVisible: true,
@@ -1730,6 +1935,7 @@ class ValidateParkingPage extends StatelessWidget {
           const SizedBox(height: 8),
           TextFormField(
             controller: controller.placaController,
+            focusNode: controller.placaFocusNode,
             textCapitalization: TextCapitalization.characters,
             validator: (value) {
               // Solo validar cuando el campo es visible
@@ -1746,7 +1952,7 @@ class ValidateParkingPage extends StatelessWidget {
             decoration: CustomTextFormField.decorationFormCard(
               labelText: '',
               theme: theme,
-              focusNode: FocusNode(),
+              focusNode: controller.placaFocusNode,
             ),
             // const InputDecoration(
             //   border: InputBorder.none,

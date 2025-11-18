@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 import 'package:qr_scaner_manrique/BRACore/api/api_parking.dart';
 import 'package:qr_scaner_manrique/BRACore/enums/main_parking_entry.dart';
-import 'package:qr_scaner_manrique/BRACore/extensions/string_extensions.dart';
 import 'package:qr_scaner_manrique/BRACore/models/response_models/parking_response.dart';
 import 'dart:io';
 
-import 'package:qr_scaner_manrique/shared/widgets/invitation_card.dart';
 import 'package:qr_scaner_manrique/shared/widgets/success_dialog.dart';
+import 'package:qr_scaner_manrique/pages/parking/validate_parking/validation_success_qr/validation_success_qr_bottom_sheet.dart';
+import 'package:qr_scaner_manrique/pages/parking/type_parking_register/parking_validation_type.dart';
+import 'package:qr_scaner_manrique/pages/parking/validate_parking/customer_data/customer_data_modal.dart';
 
 class ValidateParkingController extends GetxController {
   // Vehicle data from previous page
   final ParrkingResponse vehicleData;
   final MainParkingEntry mainParkingEntry;
+  final ParkingValidationType? validationType;
   
   // Constructor
   ValidateParkingController({
     required this.vehicleData,
     required this.mainParkingEntry,
+    this.validationType,
   });
   // Text Editing Controllers
   final TextEditingController nameController = TextEditingController();
@@ -36,9 +40,19 @@ class ValidateParkingController extends GetxController {
   final TextEditingController totalController = TextEditingController();
   final TextEditingController fechaValidacionController = TextEditingController();
   final TextEditingController observacionValidacionController = TextEditingController();
+  final TextEditingController observacionSalidaController = TextEditingController();
+  final TextEditingController celularValidacionController = TextEditingController();
 
   // Form keys
   final GlobalKey<FormState> placaFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> celularFormKey = GlobalKey<FormState>();
+  
+  // Focus nodes
+  final FocusNode placaFocusNode = FocusNode();
+  final FocusNode celularValidacionFocusNode = FocusNode();
+  
+  // Checkbox para consumidor final (default true)
+  final RxBool isConsumidorFinal = true.obs;
 
   // Tab control
   int selectedTabIndex = 0;
@@ -68,7 +82,7 @@ class ValidateParkingController extends GetxController {
   
   // Getter para verificar si mostrar el campo de placa en modo salida
   bool get shouldShowPlacaField => 
-    mainParkingEntry == MainParkingEntry.exit && 
+    (mainParkingEntry == MainParkingEntry.exit || mainParkingEntry == MainParkingEntry.validation) && 
     (vehicleData.ingreso?.placa == null || vehicleData.ingreso!.placa!.isEmpty);
   
   // Getter para obtener el texto del modo actual
@@ -129,6 +143,12 @@ class ValidateParkingController extends GetxController {
     totalController.dispose();
     fechaValidacionController.dispose();
     observacionValidacionController.dispose();
+    observacionSalidaController.dispose();
+    celularValidacionController.dispose();
+    
+    // Dispose focus nodes
+    placaFocusNode.dispose();
+    celularValidacionFocusNode.dispose();
     
     // Limpiar imágenes de validación
     validacionImages.clear();
@@ -139,11 +159,11 @@ class ValidateParkingController extends GetxController {
   String getCurrentTabTitle() {
     switch (mainParkingEntry) {
       case MainParkingEntry.entry:
-        return "Regsitro de ingreso";
+        return "Registro de ingreso";
       case MainParkingEntry.validation:
         return "Validación de ticket";
       case MainParkingEntry.exit:
-        return "Regsitro de salida";
+        return "Registro de salida";
       case MainParkingEntry.history:
         return "Historial de parqueo";
       default:
@@ -210,6 +230,13 @@ class ValidateParkingController extends GetxController {
     totalController.text = vehicleData.ingreso?.valorTotal ?? '';
     fechaValidacionController.text = formatDateTime(vehicleData.ingreso?.fechaValidacion);
     observacionValidacionController.text = "";
+    
+    // Inicializar observación de salida según el modo
+    if (mainParkingEntry == MainParkingEntry.exit) {
+      observacionSalidaController.text = vehicleData.ingreso?.observacionSalida ?? "";
+    } else {
+      observacionSalidaController.text = "";
+    }
     
     // Cargar imágenes según el tipo de entrada
     _loadImagesByEntryType();
@@ -377,6 +404,33 @@ class ValidateParkingController extends GetxController {
     update();
   }
 
+  // Contact picker method
+  final FlutterNativeContactPicker _contactPicker = FlutterNativeContactPicker();
+  
+  Future<void> pickContactForCelular() async {
+    try {
+      final contact = await _contactPicker.selectContact();
+      if (contact != null && contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+        // Obtener el primer número de teléfono y limpiar formato
+        String phoneNumber = contact.phoneNumbers!.first;
+        // Remover espacios, guiones, paréntesis y otros caracteres
+        phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
+        
+        celularValidacionController.text = phoneNumber;
+        update();
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'No se pudo acceder a los contactos',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFEB472A),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
   // Helper methods
   String formatDateTime(DateTime? dateTime) {
     if (dateTime == null) return 'Aún no hay fecha';
@@ -411,11 +465,29 @@ class ValidateParkingController extends GetxController {
 
   Future<void> onValidarPressed() async {
     try {
-      // Validar placa si es necesario usando el Form
+      // Validar todos los campos al mismo tiempo
+      bool placaValid = true;
+      bool celularValid = true;
+      
+      // Validar placa si es necesario
       if (shouldShowPlacaField) {
-        if (!placaFormKey.currentState!.validate()) {
-          return; // No continuar si la validación falla
+        placaValid = placaFormKey.currentState?.validate() ?? true;
+      }
+      
+      // Validar celular en modo validación
+      if (mainParkingEntry == MainParkingEntry.validation) {
+        celularValid = celularFormKey.currentState?.validate() ?? true;
+      }
+      
+      // Si alguna validación falló, poner foco en el primer campo con error
+      if (!placaValid || !celularValid) {
+        // Poner foco en el primer campo que falló
+        if (!placaValid) {
+          placaFocusNode.requestFocus();
+        } else if (!celularValid) {
+          celularValidacionFocusNode.requestFocus();
         }
+        return; // No continuar si hay errores
       }
       
       isValidating.value = true;
@@ -437,11 +509,60 @@ class ValidateParkingController extends GetxController {
           idLugar: idLugar,
           placa: placaController.text,
           imagenes: imagenes.isNotEmpty ? imagenes : null,
-          observacion: observacionValidacionController.text,
+          observacion: observacionSalidaController.text,
         );
+
+        // Cerrar pantalla anterior y mostrar diálogo de éxito
+        Get.back(result: true);
+        Get.dialog(
+          SuccessDialog(
+            title: 'Salida Registrada',
+            subtitle: 'La salida del parqueo ha sido registrada correctamente',
+            iconSvg: 'assets/icons/success.svg',
+            onTapAcept: () {
+              Get.back(); // Cerrar el diálogo
+            },
+          ),
+          barrierDismissible: false,
+        );
+
+        // Actualizar estado del ticket
+        isTicketExpired = false;
+        update();
       } else {
-        // Modo validación: llamar al servicio de validación
-        await _apiParking.validarParqueoRegistro(
+        // Modo validación: llamar al servicio de validación y capturar respuesta
+        // Determinar flag 'especial': S para manual, N para QR (u otros)
+        final String especialFlag = (validationType == ParkingValidationType.manual)
+            ? 'S'
+            : 'N';
+
+        // Preparar datos del cliente
+        Map<String, dynamic>? customerData;
+        
+        if (isConsumidorFinal.value) {
+          // Si consumidor final está seleccionado, usar datos por defecto
+          customerData = {
+            'tipo_identificacion': '',
+            'identificacion': '9999999999',
+            'mail_cliente': '',
+            'telefono': '',
+            'direccion_cliente': '',
+            'nombre_cliente': '',
+          };
+        } else {
+          // Si no es consumidor final, abrir modal para capturar datos del cliente
+          customerData = await Get.dialog(
+            const CustomerDataModal(),
+            barrierDismissible: false,
+          );
+
+          // Si el usuario cancela, no continuar
+          if (customerData == null) {
+            return;
+          }
+        }
+
+        final res = await _apiParking.validarParqueoRegistro(
           idIngreso: idIngreso,
           idLugar: idLugar,
           imagenes: imagenes.isNotEmpty ? imagenes : null,
@@ -450,37 +571,49 @@ class ValidateParkingController extends GetxController {
           tiempoHorasPago: tiempoPagoController.text,
           tarifaAplicada: tarifaController.text,
           valorTotal: totalController.text,
-          estado: 'VALIDO',
+          estado: vehicleData.ingreso?.estado ?? '',
           placa: placaController.text,
-          especial: 'S',
+          especial: especialFlag,
+          // Datos del formulario
+          tipoIdentificacion: customerData['tipo_identificacion']?.toString(),
+          identificacion: customerData['identificacion']?.toString(),
+          mailCliente: customerData['mail_cliente']?.toString(),
+          telefono: customerData['telefono']?.toString(),
+          direccionCliente: customerData['direccion_cliente']?.toString(),
+          nombreCliente: customerData['nombre_cliente']?.toString(),
+          celular: celularValidacionController.text.trim(),
         );
-      }
 
-      Get.back(result: true);
-      
-      // Mostrar mensaje de éxito según el modo
-      final String successTitle = mainParkingEntry == MainParkingEntry.exit 
-          ? 'Salida Registrada' 
-          : 'Validación Exitosa';
-      final String successMessage = mainParkingEntry == MainParkingEntry.exit
-          ? 'La salida del parqueo ha sido registrada correctamente'
-          : 'El parqueo ha sido validado correctamente';
-      
-      Get.dialog(
-        SuccessDialog(
-          title: successTitle,
-          subtitle: successMessage,
-          iconSvg: 'assets/icons/success.svg',
-          onTapAcept: () {
-            Get.back(); // Cerrar el diálogo
-          },
-        ),
-        barrierDismissible: false,
-      );
-      
-      // Actualizar estado del ticket
-      isTicketExpired = false;
-      update();
+        final String? url = (res['url'] ?? res['URL'])?.toString();
+        if (url != null && url.trim().isNotEmpty) {
+          // Mostrar ticket/QR en WebView dentro de un bottom sheet
+          await Get.bottomSheet(
+            ValidationSuccessQrBottomSheet(url: url),
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+          );
+          // Al cerrar el bottom sheet, regresar a la lista con resultado para refrescar
+          Get.back(result: true);
+        } else {
+          // Flujo original de éxito sin URL
+          Get.back(result: true);
+          Get.dialog(
+            SuccessDialog(
+              title: 'Validación Exitosa',
+              subtitle: 'El parqueo ha sido validado correctamente',
+              iconSvg: 'assets/icons/success.svg',
+              onTapAcept: () {
+                Get.back();
+              },
+            ),
+            barrierDismissible: false,
+          );
+        }
+
+        // Actualizar estado del ticket
+        isTicketExpired = false;
+        update();
+      }
       
     } catch (e) {
     } finally {

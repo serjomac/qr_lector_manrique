@@ -206,20 +206,36 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
             GetBuilder<ExitRequestFormController>(builder: (controller) {
               List<Widget> conditionalFields = [];
 
-              // Nombre del que retira
-              if (controller.guestNameController.text.isNotEmpty) {
+              // Retira - only show if nameInvitation is not null or empty
+              if (controller.selectedPendingRegister?.nameInvitation != null && 
+                  controller.selectedPendingRegister!.nameInvitation!.isNotEmpty) {
                 conditionalFields.addAll([
                   const SizedBox(height: 20),
                   CustomTextFormField(
-                    label: 'Nombre del que retira',
+                    label: 'Nombre invitado',
                     hintText: '',
-                    controller: controller.guestNameController,
+                    controller: TextEditingController(text: controller.selectedPendingRegister!.nameInvitation),
                     focusNode: FocusNode(),
                     onChanged: (value) {},
                     readOnly: true,
                   ),
                 ]);
               }
+
+              // // Nombre del que retira
+              // if (controller.guestNameController.text.isNotEmpty) {
+              //   conditionalFields.addAll([
+              //     const SizedBox(height: 20),
+              //     CustomTextFormField(
+              //       label: 'Nombre del que retira',
+              //       hintText: '',
+              //       controller: controller.guestNameController,
+              //       focusNode: FocusNode(),
+              //       onChanged: (value) {},
+              //       readOnly: true,
+              //     ),
+              //   ]);
+              // }
 
               // Cédula del que retira
               if (controller.guestIdController.text.isNotEmpty) {
@@ -229,21 +245,6 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
                     label: 'Cédula del que retira',
                     hintText: '',
                     controller: controller.guestIdController,
-                    focusNode: FocusNode(),
-                    onChanged: (value) {},
-                    readOnly: true,
-                  ),
-                ]);
-              }
-
-              // Celular
-              if (controller.guestPhoneController.text.isNotEmpty) {
-                conditionalFields.addAll([
-                  const SizedBox(height: 20),
-                  CustomTextFormField(
-                    label: 'Celular',
-                    hintText: '',
-                    controller: controller.guestPhoneController,
                     focusNode: FocusNode(),
                     onChanged: (value) {},
                     readOnly: true,
@@ -374,6 +375,7 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
                 : CustomTextFormField(
                     label: 'Tipo de Pinlet',
                     hintText: '',
+                    readOnly: true,
                     controller: controller.pinletTypeController,
                     focusNode: FocusNode(),
                     onChanged: (value) {},
@@ -382,6 +384,7 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
             CustomTextFormField(
               label: 'Residente',
               hintText: '',
+              readOnly: true,
               controller: controller.representativeController,
               focusNode: controller.representativeFocus,
               onChanged: (value) {},
@@ -392,6 +395,7 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
               hintText: '',
               controller: controller.phoneController,
               focusNode: controller.phoneFocus,
+              readOnly: true,
               onChanged: (value) {},
             ),
             const SizedBox(height: 20),
@@ -404,6 +408,7 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
                     controller: controller.primaryController,
                     focusNode: FocusNode(),
                     onChanged: (value) {},
+                    readOnly: true,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -414,16 +419,18 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
                     controller: controller.secondaryController,
                     focusNode: FocusNode(),
                     onChanged: (value) {},
+                    readOnly: true,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: controller.guestNameController.text.isEmpty ? 0 : 20),
             controller.guestNameController.text.isEmpty
                 ? Container()
                 : CustomTextFormField(
                     label: 'Nombre del invitado',
                     hintText: '',
+                    readOnly: true,
                     controller: controller.guestNameController,
                     focusNode: FocusNode(),
                     onChanged: (value) {},
@@ -433,27 +440,20 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
                 ? Container()
                 : CustomTextFormField(
                     label: 'Cédula Invitado',
+                    readOnly: true,
                     hintText: '',
                     controller: controller.guestIdController,
                     focusNode: FocusNode(),
                     onChanged: (value) {},
                   ),
             SizedBox(height: controller.guestPhoneController.text.isEmpty ? 0 : 20),
-            controller.guestPhoneController.text.isEmpty
-                ? Container()
-                : CustomTextFormField(
-                    label: 'Celular Invitado',
-                    hintText: '',
-                    controller: controller.guestPhoneController,
-                    focusNode: FocusNode(),
-                    onChanged: (value) {},
-                  ),
             SizedBox(
                 height: controller.plateController.text.isEmpty ? 0 : 20),
             controller.plateController.text.isEmpty
                 ? Container()
                 : CustomTextFormField(
                     label: 'Placa',
+                    readOnly: true,
                     hintText: '',
                     controller: controller.plateController,
                     focusNode: FocusNode(),
@@ -464,6 +464,7 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
                 ? Container()
                 : CustomTextFormField(
                     label: 'Motivo de invitación',
+                    readOnly: true,
                     hintText: '',
                     controller: controller.visitReasonController,
                     focusNode: FocusNode(),
@@ -493,7 +494,9 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
           // Mostrar campos en modo read-only cuando es histórico
           if (controller.mainActionType == MainActionType.historic || controller.mainActionType == MainActionType.hisotric) ...[
             // Mostrar imágenes si están disponibles
-            if (controller.residentChildsResponse.imagenes != null && controller.residentChildsResponse.imagenes!.isNotEmpty) ...[
+            // Priority: selectedPendingRegister images, then residentChildsResponse images
+            if ((controller.selectedPendingRegister?.imagenes != null && controller.selectedPendingRegister!.imagenes!.isNotEmpty) ||
+                (controller.residentChildsResponse.imagenes != null && controller.residentChildsResponse.imagenes!.isNotEmpty)) ...[
               const BRAText(
                 text: 'Imágenes del retiro',
                 size: 14,
@@ -505,9 +508,9 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
                 height: 120,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: controller.residentChildsResponse.imagenes!.length,
+                  itemCount: controller.selectedPendingRegister?.imagenes?.length ?? controller.residentChildsResponse.imagenes?.length ?? 0,
                   itemBuilder: (context, index) {
-                    final imageUrl = controller.residentChildsResponse.imagenes![index];
+                    final imageUrl = controller.selectedPendingRegister?.imagenes?[index] ?? controller.residentChildsResponse.imagenes![index];
                     return Container(
                       margin: const EdgeInsets.only(right: 8),
                       width: 100,
@@ -602,6 +605,7 @@ class ExitWithoutQrToSchoolRequestFormPage extends StatelessWidget {
                 controller.licensePlateController.text.isEmpty &&
                 controller.reasonController.text.isEmpty && 
                 controller.dateTimeController.text.isEmpty &&
+                (controller.selectedPendingRegister?.imagenes == null || controller.selectedPendingRegister!.imagenes!.isEmpty) &&
                 (controller.residentChildsResponse.imagenes == null || controller.residentChildsResponse.imagenes!.isEmpty)) ...[
               const BRAText(
                 text: 'No hay detalles adicionales disponibles para este registro.',

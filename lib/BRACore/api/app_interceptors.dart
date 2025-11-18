@@ -103,9 +103,20 @@ class AppInterceptors extends Interceptor {
       final token = UserData.sharedInstance.userLogin!.tokenG!;
       log('TOKEN GENERAL: ' + token);
       options.headers['Authorization'] = 'Bearer ' + token;
+      
+      // Add user-login header for non-login requests
+      if (!options.path.contains('/login_Bitacora')) {
+        final userId = UserData.sharedInstance.userLogin!.idUsuarioAdmin;
+        if (userId != null) {
+          options.headers['userId'] = userId.toString();
+          options.headers['userName'] = UserData.sharedInstance.userLogin!.usuario.toString();
+          log('USER-LOGIN HEADER: ' + userId.toString());
+        }
+      }
     } else {
       options.headers['Authorization'] = 'Bearer ' + Secrets.accessToken;
     }
+    print('headers' + options.headers.toString());
     Codec<String, String> stringToBase64 = utf8.fuse(base64);
     String infoDataEncode = stringToBase64.encode(json.encode(infoData));
     options.headers['dispositivo'] = infoDataEncode;
